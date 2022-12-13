@@ -1,0 +1,13 @@
+name = "GeNIADMM"
+uuid = "0d1f9d2f-3ce1-407c-be80-0fbb5dc675f5"
+authors = ["Theo Diamandis"]
+version = "0.1.0"
+
+[compat]
+julia = "1.8"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
