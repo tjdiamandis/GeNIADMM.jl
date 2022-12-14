@@ -1,6 +1,8 @@
 using GeNIADMM
 using Test
 
-@testset "GeNIADMM.jl" begin
-    # Write your tests here.
-end
+using LinearAlgebra, SparseArrays
+using Random
+
+include("lasso.jl")
+include("logistic.jl")
