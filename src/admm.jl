@@ -103,6 +103,12 @@ function compute_rhs!(solver::LogisticSolver)
 end
 
 
+# Gradient Descent ADMM
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+#   Note that this formulation is equivalent to that in the paper with
+#   ηᵏ = (1 - ηρ)/η, where η = 1 / (1.1λmax(AᵀA) + ρ),
+#   ⟹ ηᵏ = 1.1λmax(AᵀA)
 function update_x̃_gd!(
     solver::LassoSolver;
     P=I,
@@ -116,7 +122,7 @@ function update_x̃_gd!(
     end
 
     # P = λmax(AᵀA)
-    η = 1 / (P + solver.ρ) / 2.0
+    η = 1 / (1.1P + solver.ρ)
     mul!(solver.Az, solver.lhs_op.A, solver.x̃k)
     mul!(solver.ATAz, solver.lhs_op.A', solver.Az)
     @. solver.x̃k = solver.x̃k - η * (solver.ATAz + solver.ρ*solver.x̃k - solver.rhs)
@@ -142,7 +148,7 @@ function update_x̃_gd!(
     end
 
     # P = λmax(AᵀA) ≥ λmax(Aᵀdiag(wᵏ)A) since wᵏ ≤ 1
-    η = 1 / (P + solver.ρ) / 2
+    η = 1 / (1.1P + solver.ρ)
     
     # vm = Ax ⟹ vmᵢ = bᵢãᵢᵀx
     vm = solver.vm
@@ -163,6 +169,9 @@ function update_x̃_gd!(
 end
 
 
+# Sketch and Solve ADMM
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 function update_x̃_sketch!(
     solver::LassoSolver{T},
     Enorm;
@@ -247,6 +256,9 @@ function update_x̃_sketch!(
 end
 
 
+# NysADMM
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 function update_x̃!(
     solver::MLSolver,
     linsys_solver::CgSolver;
@@ -299,6 +311,9 @@ function cholesky_update(linsys_solver::SuiteSparse.CHOLMOD.Factor, solver::Logi
 end
 
 
+# Exact ADMM
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 function update_x̃!(
     solver::MLSolver,
     linsys_solver::Union{Cholesky, SuiteSparse.CHOLMOD.Factor};
@@ -566,10 +581,10 @@ function solve!(
     solver.loss = Inf
     solver.rp_norm = Inf
     solver.rd_norm = Inf
-    solver.xk .= randn(n)
-    solver.x̃k .= randn(n)
-    solver.zk .= randn(n)
-    solver.yk .= randn(n)
+    solver.xk .= zeros(n)
+    solver.x̃k .= zeros(n)
+    solver.zk .= zeros(n)
+    solver.yk .= zeros(n)
 
     # --- enable multithreaded BLAS ---
     if multithreaded
