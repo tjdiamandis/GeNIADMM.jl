@@ -19,8 +19,9 @@ SuiteSparse = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 [compat]
 Krylov = "0.7, 0.8, 0.9"
 LogExpFunctions = "0.3"
-StaticArrays = "1"
+Optim = "1"
 RandomizedPreconditioners = "0.1.5"
+StaticArrays = "1"
 julia = "1.8"
 
 [extras]
