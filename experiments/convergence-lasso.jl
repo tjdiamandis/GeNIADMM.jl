@@ -195,4 +195,5 @@ lasso_plt = plot(;
 add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.rp, "Primal Residual", :indigo)
 add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.rd, "Dual Residual", :red)
 add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.dual_gap, "Duality Gap (relative)", :mediumblue)
+add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black; style=:dash, lw=1)
 savefig(lasso_plt, joinpath(FIGS_PATH, "lasso.pdf"))
