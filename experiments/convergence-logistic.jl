@@ -1,7 +1,7 @@
 using Pkg
 Pkg.activate(joinpath(@__DIR__))
 using OpenML, Tables, JLD2
-using Random, LinearAlgebra, SparseArrays
+using Random, LinearAlgebra, SparseArrays, Printf
 using JuMP, MosekTools
 using GeNIADMM
 
