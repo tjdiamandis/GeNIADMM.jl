@@ -94,7 +94,7 @@ res_nys = GeNIADMM.solve!(
 prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
 res_sketch = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
-    precondition=true, verbose=true, print_iter=100, sketch_solve_x_update=true,
+    precondition=false, verbose=true, print_iter=100, sketch_solve_x_update=true,
     sketch_rank=500, rho_update_iter=1000,
     multithreaded=true
 )
@@ -132,6 +132,24 @@ log_exact = res_exact.log
 log_sketch = res_sketch.log
 log_opt = res_opt.log
 @show pstar - res_opt.obj_val
+
+# Printout timings
+@printf("\nADMM, Exact:")
+@printf("- setup:    %6.3f", log_exact.setup_time)
+@printf("- iter:    %6.3f", log_exact.solve_time / length(log_exact.dual_gap))
+
+@printf("\nNysADMM:")
+@printf("- setup:    %6.3f", log_nys.setup_time)
+@printf("- iter:    %6.3f", log_nys.solve_time / length(log_nys.dual_gap))
+
+@printf("\nGradient Descent:")
+@printf("- setup:    %6.3f", log_gd.setup_time)
+@printf("- iter:    %6.3f", log_gd.solve_time / length(log_gd.dual_gap))
+
+@printf("\nSketch & Solve:")
+@printf("- setup:    %6.3f", log_sketch.setup_time)
+@printf("- iter:    %6.3f", log_nys.solve_time / length(log_nys.dual_gap))
+
 
 ## Plots
 using Plots, LaTeXStrings
