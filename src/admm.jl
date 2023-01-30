@@ -296,7 +296,7 @@ end
 
 function cholesky_update(::Cholesky, solver::LogisticSolver)
     A = solver.lhs_op.A
-    return cholesky(Symmetric(A'*Diagonal(solver.lhs_op.wk)*A) + (solver.ρ + solver.μ) * I)
+    return cholesky(Symmetric(A'*Diagonal(solver.lhs_op.wk)*A) + solver.ρ * I)
 end
 
 
@@ -695,7 +695,8 @@ function solve!(
                 KKT_mat[diagind(KKT_mat)] .+= (solver.ρ .- ρ_old)
                 linsys_solver = cholesky(KKT_mat)
             elseif updated_rho && precondition && !(sketch_solve_x_update || gd_x_update)
-                P = RP.NystromPreconditionerInverse(P.A_nys, solver.ρ + solver.μ)
+                reg_term = typeof(solver) <: LogisticSolver ? solver.ρ : solver.ρ + solver.μ
+                P = RP.NystromPreconditionerInverse(P.A_nys, reg_term)
             end
         end
 
@@ -703,7 +704,7 @@ function solve!(
         if precondition && t % sketch_update_iter == 0 && typeof(solver) <: LogisticSolver
             update_wk!(solver)
             ATA_nys = NystromSketch_ATA_logistic(solver.lhs_op.A, r0, solver)
-            P = RP.NystromPreconditionerInverse(ATA_nys, solver.ρ + solver.μ)
+            P = RP.NystromPreconditionerInverse(ATA_nys, solver.ρ)
         end
 
 

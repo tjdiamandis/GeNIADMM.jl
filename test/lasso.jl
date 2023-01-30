@@ -12,7 +12,7 @@
     γ = 0.1*γmax
 
     # Create solver
-    prob = GeNIADMM.LassoSolver(A, b, γ; ρ=1.0)
+    prob = GeNIADMM.LassoSolver(A, b, γ; ρ=1.0, μ=0.0)
 
     @testset "Direct" begin
         res = GeNIADMM.solve!(
@@ -129,7 +129,7 @@
     γ = 0.1*γmax
 
     # Create solver
-    prob = GeNIADMM.LassoSolver(A, b, γ; ρ=1.0)
+    prob = GeNIADMM.LassoSolver(A, b, γ; ρ=1.0, μ=0.0)
     
     @testset "Dense" begin
         res = GeNIADMM.solve!(
