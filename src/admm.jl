@@ -226,13 +226,11 @@ function update_x̃_sketch!(
     @. solver.qk = logistic(vm)
     @. solver.lhs_op.wk = solver.qk / (1 + exp(vm))
 
-    Θ = NystromSketch_ATA_logistic(solver.lhs_op.A, r0, solver)
-    Enorm = estimate_norm_E(QuadForm(solver.lhs_op.A), Θ)
     @. solver.qk *= solver.data.b
     mul!(solver.vn, solver.lhs_op.A', solver.qk)
     @. solver.rhs -= solver.vn
 
-    mul!(solver.vn, Θ, solver.x̃k)
+    mul!(solver.vn, P, solver.x̃k)
     solver.rhs += solver.vn + Enorm * solver.x̃k
 
     # if logging, time the GD step
@@ -242,10 +240,10 @@ function update_x̃_sketch!(
 
     # P = Ânys
     τ = Enorm + solver.ρ
-    r = length(Θ.Λ.diag)
-    @views mul!(solver.vn[1:r], Θ.U', solver.rhs)
-    @. @views solver.vn[1:r] *= one(T)/(Θ.Λ.diag + τ) - one(T)/τ
-    @views mul!(solver.x̃k, Θ.U, solver.vn[1:r])
+    r = length(P.Λ.diag)
+    @views mul!(solver.vn[1:r], P.U', solver.rhs)
+    @. @views solver.vn[1:r] *= one(T)/(P.Λ.diag + τ) - one(T)/τ
+    @views mul!(solver.x̃k, P.U, solver.vn[1:r])
     @. solver.x̃k += one(T)/τ * solver.rhs
 
     if logging 
@@ -565,6 +563,7 @@ function solve!(
     sketch_solve_x_update::Bool=false,
     sketch_rank=10,
     logistic_exact_solve::Bool=false,
+    sketch_solve_update_iter=20
 )
     !indirect && precondition && ArgumentError("Cannot precondition direct solve")
 
@@ -622,8 +621,8 @@ function solve!(
         P = RP.eigmax_power(QuadForm(solver.lhs_op.A); q=10)
     elseif sketch_solve_x_update
         r = sketch_rank
-        P = RP.NystromSketch_ATA(solver.lhs_op.A, r, r)
-        Enorm = typeof(solver) <: LassoSolver ? estimate_norm_E(QuadForm(solver.lhs_op.A), P) : Inf
+        S = RP.NystromSketch_ATA(solver.lhs_op.A, r, r)
+        Enorm = typeof(solver) <: LassoSolver ? estimate_norm_E(QuadForm(solver.lhs_op.A), S) : Inf
     end
 
     # --- Logging ---
@@ -658,7 +657,21 @@ function solve!(
         if gd_x_update
             time_linsys = update_x̃_gd!(solver; P=P, logging=logging)
         elseif sketch_solve_x_update
-            time_linsys = update_x̃_sketch!(solver, Enorm; P=P, logging=logging, r0=sketch_rank)
+            if typeof(solver) <: LogisticSolver && (t == 1 || t % sketch_solve_update_iter == 0)
+                #  -- Update wk --
+                # vm = Ax ⟹ vmᵢ = bᵢãᵢᵀx
+                vm = solver.vm
+                mul!(vm, solver.lhs_op.A, solver.x̃k)
+                @. vm *= solver.data.b
+
+                # qᵏ = exp(vm) / (1 + exp(vm))
+                @. solver.qk = logistic(vm)
+                @. solver.lhs_op.wk = solver.qk / (1 + exp(vm))
+                # -- Sketch --
+                S = NystromSketch_ATA_logistic(solver.lhs_op.A, r, solver)
+                Enorm = estimate_norm_E(QuadForm(solver.lhs_op.A), S)
+            end
+            time_linsys = update_x̃_sketch!(solver, Enorm; P=S, logging=logging, r0=sketch_rank)
         elseif logistic_exact_solve
             time_linsys = update_x̃_exact!(solver; logging=logging)
         else
