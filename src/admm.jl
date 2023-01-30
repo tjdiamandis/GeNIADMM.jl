@@ -40,20 +40,20 @@ function NystromSketch_ATA_logistic(A::AbstractMatrix{T}, r::Int, solver::Logist
 end
 
 
-function build_preconditioner(solver::LassoSolver, r0)
+function build_preconditioner(solver::LassoSolver, r0; μ)
     ATA_nys = RP.NystromSketch_ATA(solver.lhs_op.A, r0, r0)
-    return RP.NystromPreconditionerInverse(ATA_nys, solver.ρ)
+    return RP.NystromPreconditionerInverse(ATA_nys, solver.ρ + solver.μ)
 end
 
 
-function build_preconditioner(solver::LogisticSolver, r0)
+function build_preconditioner(solver::LogisticSolver, r0; μ)
     ATA_nys = NystromSketch_ATA_logistic(solver.lhs_op.A, r0, solver)
     return RP.NystromPreconditionerInverse(ATA_nys, solver.ρ)
 end
 
 
 function compute_KKT_mat(solver::LassoSolver)
-    return Symmetric(solver.lhs_op.A'*solver.lhs_op.A + solver.ρ * I)
+    return Symmetric(solver.lhs_op.A'*solver.lhs_op.A + (solver.ρ + solver.μ) * I)
 end
 
 
@@ -125,7 +125,7 @@ function update_x̃_gd!(
     η = 1 / (1.1P + solver.ρ)
     mul!(solver.Az, solver.lhs_op.A, solver.x̃k)
     mul!(solver.ATAz, solver.lhs_op.A', solver.Az)
-    @. solver.x̃k = solver.x̃k - η * (solver.ATAz + solver.ρ*solver.x̃k - solver.rhs)
+    @. solver.x̃k = solver.x̃k - η * (solver.ATAz + (solver.ρ + solver.μ)*solver.x̃k - solver.rhs)
     
     if logging 
         return (time_ns() - time_start) / 1e9
@@ -148,7 +148,7 @@ function update_x̃_gd!(
     end
 
     # P = λmax(AᵀA) ≥ λmax(Aᵀdiag(wᵏ)A) since wᵏ ≤ 1
-    η = 1 / (1.1P + solver.ρ)
+    η = 1 / (1.1P + solver.ρ + solver.μ)
     
     # vm = Ax ⟹ vmᵢ = bᵢãᵢᵀx
     vm = solver.vm
@@ -192,7 +192,7 @@ function update_x̃_sketch!(
     end
 
     # P = Ânys
-    τ = Enorm + solver.ρ
+    τ = Enorm + solver.ρ + solver.μ
     r = length(P.Λ.diag)
     @views mul!(solver.vn[1:r], P.U', solver.rhs)
     @. @views solver.vn[1:r] *= one(T)/(P.Λ.diag + τ) - one(T)/τ
@@ -296,7 +296,7 @@ end
 
 function cholesky_update(::Cholesky, solver::LogisticSolver)
     A = solver.lhs_op.A
-    return cholesky(Symmetric(A'*Diagonal(solver.lhs_op.wk)*A) + solver.ρ * I)
+    return cholesky(Symmetric(A'*Diagonal(solver.lhs_op.wk)*A) + (solver.ρ + solver.μ) * I)
 end
 
 
@@ -422,7 +422,7 @@ function obj_val!(solver::LassoSolver{T}) where {T}
     bTAz = dot(solver.data.ATb, z)
 
     solver.loss = 0.5*(dot(z, ATAz) - 2bTAz + solver.data.bTb)
-    solver.obj_val = solver.loss + solver.γ * norm(z, 1)
+    solver.obj_val = solver.loss + 0.5 * solver.μ * sum(x->x^2, z) + solver.γ * norm(z, 1)
     return solver.obj_val
 end
 
@@ -524,7 +524,7 @@ end
 
 # Dual gap criterion
 function converged(solver::LassoSolver, tol)
-    return solver.dual_gap ≤ tol
+    return iszero(solver.μ) ? solver.dual_gap ≤ tol : solver.rp_norm < tol && solver.rd_norm < tol
 end
 
 # Relative KKT residual criterion
@@ -563,7 +563,8 @@ function solve!(
     sketch_solve_x_update::Bool=false,
     sketch_rank=10,
     logistic_exact_solve::Bool=false,
-    sketch_solve_update_iter=20
+    sketch_solve_update_iter=20,
+    μ=1,
 )
     !indirect && precondition && ArgumentError("Cannot precondition direct solve")
 
@@ -605,7 +606,7 @@ function solve!(
 
         
         r0 = n ≥ 1_000 ? 50 : m ÷ 20
-        P = build_preconditioner(solver, r0)
+        P = build_preconditioner(solver, r0; μ=μ)
         precond_time = (time_ns() - precond_time_start) / 1e9
         
         r = length(P.A_nys.Λ.diag)
@@ -694,7 +695,7 @@ function solve!(
                 KKT_mat[diagind(KKT_mat)] .+= (solver.ρ .- ρ_old)
                 linsys_solver = cholesky(KKT_mat)
             elseif updated_rho && precondition && !(sketch_solve_x_update || gd_x_update)
-                P = RP.NystromPreconditionerInverse(P.A_nys, solver.ρ)
+                P = RP.NystromPreconditionerInverse(P.A_nys, solver.ρ + solver.μ)
             end
         end
 
@@ -702,7 +703,7 @@ function solve!(
         if precondition && t % sketch_update_iter == 0 && typeof(solver) <: LogisticSolver
             update_wk!(solver)
             ATA_nys = NystromSketch_ATA_logistic(solver.lhs_op.A, r0, solver)
-            P = RP.NystromPreconditionerInverse(ATA_nys, solver.ρ)
+            P = RP.NystromPreconditionerInverse(ATA_nys, solver.ρ + solver.μ)
         end
 
 

@@ -6,11 +6,11 @@ struct LassoLinearOperator{T} <: LinearOperator
     A::AbstractMatrix{T}
     cache::AbstractVector{T}
     ρ::MVector{1,T}
-    # γ2::MVector{1,T} # for elastic net
+    μ::MVector{1,T}     # for elastic net
 
-    function LassoLinearOperator(A::AbstractMatrix{T}, ρ::T) where {T <: AbstractFloat}
+    function LassoLinearOperator(A::AbstractMatrix{T}, ρ::T, μ::T) where {T <: AbstractFloat}
         m = size(A, 1)
-        return new{T}(A, zeros(T, m), SA[ρ])
+        return new{T}(A, zeros(T, m), SA[ρ], SA[μ])
         # return new{T}(A/sqrt(m), zeros(T, m), SA[ρ])
     end
 end
@@ -19,7 +19,7 @@ end
 function LinearAlgebra.mul!(y::AbstractVector{T}, M::LassoLinearOperator{T}, x::AbstractVector{T}) where {T}
     mul!(M.cache, M.A, x)
     mul!(y, M.A', M.cache)
-    @. y += M.ρ[1] * x
+    @. y += (M.ρ[1] + M.μ[1]) * x
     return nothing
 end
 Base.size(M::LinearOperator) = (size(M.A, 2), size(M.A, 2))

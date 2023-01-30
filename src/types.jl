@@ -46,19 +46,21 @@ mutable struct LassoSolver{T} <: MLSolver{T}
     γ::T                        # param : L1 regularization weight
     ρ::T                        # param : ADMM penalty
     α::T                        # param : relaxation
+    μ::T                        # param : regularizer
 
     function LassoSolver(
         A::AbstractMatrix{T}, 
         b::AbstractVector{T}, 
         γ::T; 
         ρ=1.0, 
-        α=1.5
+        α=1.5,
+        μ=0.0
     ) where {T <: AbstractFloat}
         data = LassoProblemData(A, b)
         m, n = size(A)
         return new{T}(
             data,
-            LassoLinearOperator(A, ρ),
+            LassoLinearOperator(A, ρ, μ),
             zeros(T, n),
             zeros(T, n),
             zeros(T, n),
@@ -77,7 +79,8 @@ mutable struct LassoSolver{T} <: MLSolver{T}
             zero(T),
             γ,
             ρ,
-            α
+            α,
+            μ
         )
     end
 end
