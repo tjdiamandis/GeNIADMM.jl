@@ -169,11 +169,12 @@ FIGS_PATH = joinpath(@__DIR__, "figs")
 
 dual_gap_iter_plt = plot(; 
     dpi=300,
-    title="Convergence (dual gap)",
+    legendfontsize=14,
+    labelfontsize=14,
     yaxis=:log,
     ylabel="Dual Gap",
     xlabel="Iteration",
-    legend=:topright,
+    legend=:bottomright,
 )
 add_to_plot!(dual_gap_iter_plt, 1:length(log_gd.iter_time), log_gd.dual_gap, "Gradient", :coral)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_exact.iter_time), log_exact.dual_gap, "ADMM (exact)", :red)
@@ -183,7 +184,8 @@ savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "logistic-dual-gap.pdf"))
 
 rp_iter_plt = plot(; 
     dpi=300,
-    title="Convergence (primal residual)",
+    legendfontsize=14,
+    labelfontsize=14,
     yaxis=:log,
     ylabel=L"Primal Residual $\ell_2$ Norm",
     xlabel="Iteration",
@@ -197,7 +199,8 @@ savefig(rp_iter_plt, joinpath(FIGS_PATH, "logistic-rp.pdf"))
 
 rd_iter_plt = plot(; 
     dpi=300,
-    title="Convergence (dual residual)",
+    legendfontsize=14,
+    labelfontsize=14,
     yaxis=:log,
     ylabel=L"Dual Residual $\ell_2$ Norm",
     xlabel="Iteration",
@@ -211,11 +214,12 @@ savefig(rd_iter_plt, joinpath(FIGS_PATH, "logistic-rd.pdf"))
 
 obj_val_iter_plt = plot(; 
     dpi=300,
-    title="Convergence (obj val)",
+    legendfontsize=14,
+    labelfontsize=14,
     yaxis=:log,
     ylabel=L"$(p-p^\star)/p^\star$",
     xlabel="Iteration",
-    legend=:topright,
+    legend=:bottomright,
 )
 add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), (log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
 add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), (log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple)
@@ -229,7 +233,9 @@ logistic_plt = plot(;
     yaxis=:log,
     xlabel="Iteration",
     legend=:topright,
-    ylims=(1e-10, 1000)
+    ylims=(1e-10, 1000),
+    legendfontsize=14,
+    labelfontsize=14,
 )
 add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), log_opt.rp, "Primal Residual", :indigo)
 add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), log_opt.rd, "Dual Residual", :red)

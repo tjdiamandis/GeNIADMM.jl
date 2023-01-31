@@ -43,11 +43,12 @@ function build_sparse_lasso_model(A, b, γ, μ)
     @constraint(model, A*x - b .== z)
     
     # Add ℓ1 regularization
-    @variable(model, 0.0 <= reg)
-    @constraint(model, [reg; x] in MOI.NormOneCone(n + 1))
+    @variable(model, t[1:n])
+    @constraint(model, t .>= x)
+    @constraint(model, t .>= -x)
     
     # Define objective
-    @objective(model, Min, 0.5 * z'*z + 0.5 * μ * x'x + γ * reg)
+    @objective(model, Min, 0.5 * z'*z + 0.5 * μ * x'*x + γ * sum(t))
     return model
 end
 
@@ -61,7 +62,10 @@ set_optimizer_attribute(lasso_model, "MSK_DPAR_INTPNT_CO_TOL_NEAR_REL", 1.0)
 set_optimizer_attribute(lasso_model, "MSK_IPAR_PRESOLVE_USE", 0)
 
 JuMP.optimize!(lasso_model)
+@show termination_status(lasso_model)
 pstar = m*objective_value(lasso_model)
+
+# zero out coefficients that are very close to 0 -> smaller obj value
 zstar = value.(lasso_model[:x])
 zstar[abs.(zstar) .< 1e-3] .= 0
 pstar = 0.5 * norm(A*zstar - b,2)^2 + 0.5 * μ * norm(zstar,2)^2 + γ * norm(zstar,1)
@@ -129,28 +133,14 @@ end
 
 FIGS_PATH = joinpath(@__DIR__, "figs")
 
-dual_gap_iter_plt = plot(; 
-    dpi=300,
-    title="Convergence (dual gap)",
-    yaxis=:log,
-    ylabel="Dual Gap",
-    xlabel="Iteration",
-    legend=:topright,
-    ylims=(9e-5, 1e3)
-)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_gd.iter_time), log_gd.dual_gap, "Gradient", :coral)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_dir.iter_time), log_dir.dual_gap, "ADMM, Exact", :red)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_nys.iter_time), log_nys.dual_gap, "ADMM, Nystrom", :green)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_sketch.iter_time), log_sketch.dual_gap, "Sketch", :purple)
-# savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "lasso-dual-gap-smooth.pdf"))
-
 rp_iter_plt = plot(; 
     dpi=300,
-    title="Convergence (primal residual)",
     yaxis=:log,
     ylabel=L"Primal Residual $\ell_2$ Norm",
     xlabel="Iteration",
     legend=:topright,
+    legendfontsize=14,
+    labelfontsize=14,
 )
 add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :coral)
 add_to_plot!(rp_iter_plt, 1:length(log_dir.iter_time), log_dir.rp, "ADMM (Exact)", :red)
@@ -160,11 +150,12 @@ savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp-smooth.pdf"))
 
 rd_iter_plt = plot(; 
     dpi=300,
-    title="Convergence (dual residual)",
     yaxis=:log,
     ylabel=L"Dual Residual $\ell_2$ Norm",
     xlabel="Iteration",
     legend=:topright,
+    legendfontsize=14,
+    labelfontsize=14,
 )
 add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :coral)
 add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple)
@@ -174,11 +165,12 @@ savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd-smooth.pdf"))
 
 obj_val_iter_plt = plot(; 
     dpi=300,
-    title="Convergence (obj val)",
     yaxis=:log,
     ylabel=L"$\left| p - p^\star\right|/p^\star$",
     xlabel="Iteration",
     legend=:topright,
+    legendfontsize=14,
+    labelfontsize=14,
     # ylims=(1e-8, 100)
 )
 add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), abs.(log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
@@ -187,17 +179,3 @@ add_to_plot!(obj_val_iter_plt, 1:length(log_dir.iter_time), abs.(log_dir.obj_val
 add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), abs.(log_nys.obj_val .- pstar)./pstar, "ADMM, Nystrom", :mediumblue)
 # add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), (log_nys.obj_val .- pstar_nys)./pstar_nys, "ADMM, Nystrom (pstar Nys)", :mediumblue)
 savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val-smooth.pdf"))
-
-lasso_plt = plot(; 
-    dpi=300,
-    title="Convergence (Lasso)",
-    yaxis=:log,
-    xlabel="Iteration",
-    legend=:topright,
-    ylims=(1e-10, 1000)
-)
-add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.rp, "Primal Residual", :indigo)
-add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.rd, "Dual Residual", :red)
-add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.dual_gap, "Duality Gap (relative)", :mediumblue)
-add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black; style=:dash, lw=1)
-# savefig(lasso_plt, joinpath(FIGS_PATH, "lasso-smooth.pdf"))
