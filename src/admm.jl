@@ -122,7 +122,7 @@ function update_x̃_gd!(
     end
 
     # P = λmax(AᵀA)
-    η = 1 / (1.1P + solver.ρ)
+    η = 1 / (1.1P + solver.ρ + solver.μ)
     mul!(solver.Az, solver.lhs_op.A, solver.x̃k)
     mul!(solver.ATAz, solver.lhs_op.A', solver.Az)
     @. solver.x̃k = solver.x̃k - η * (solver.ATAz + (solver.ρ + solver.μ)*solver.x̃k - solver.rhs)
@@ -148,7 +148,7 @@ function update_x̃_gd!(
     end
 
     # P = λmax(AᵀA) ≥ λmax(Aᵀdiag(wᵏ)A) since wᵏ ≤ 1
-    η = 1 / (1.1P + solver.ρ + solver.μ)
+    η = 1 / (1.1P + solver.ρ)
     
     # vm = Ax ⟹ vmᵢ = bᵢãᵢᵀx
     vm = solver.vm
