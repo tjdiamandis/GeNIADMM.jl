@@ -143,9 +143,9 @@ rp_iter_plt = plot(;
     labelfontsize=14,
 )
 add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :coral)
-add_to_plot!(rp_iter_plt, 1:length(log_dir.iter_time), log_dir.rp, "ADMM (Exact)", :red)
 add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple)
-add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "ADMM, Nystrom", :mediumblue)
+add_to_plot!(rp_iter_plt, 1:length(log_dir.iter_time), log_dir.rp, "ADMM (exact)", :red)
+add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue)
 savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp-smooth.pdf"))
 
 rd_iter_plt = plot(; 
@@ -159,8 +159,8 @@ rd_iter_plt = plot(;
 )
 add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :coral)
 add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple)
-add_to_plot!(rd_iter_plt, 1:length(log_dir.iter_time), log_dir.rd, "ADMM, Exact", :red)
-add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "ADMM, Nystrom", :mediumblue)
+add_to_plot!(rd_iter_plt, 1:length(log_dir.iter_time), log_dir.rd, "ADMM (exact)", :red)
+add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue)
 savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd-smooth.pdf"))
 
 obj_val_iter_plt = plot(; 
@@ -175,7 +175,7 @@ obj_val_iter_plt = plot(;
 )
 add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), abs.(log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
 add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), abs.(log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple)
-add_to_plot!(obj_val_iter_plt, 1:length(log_dir.iter_time), abs.(log_dir.obj_val .- pstar)./pstar, "ADMM, Exact", :red)
-add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), abs.(log_nys.obj_val .- pstar)./pstar, "ADMM, Nystrom", :mediumblue)
+add_to_plot!(obj_val_iter_plt, 1:length(log_dir.iter_time), abs.(log_dir.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
+add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), abs.(log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue)
 # add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), (log_nys.obj_val .- pstar_nys)./pstar_nys, "ADMM, Nystrom (pstar Nys)", :mediumblue)
 savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val-smooth.pdf"))

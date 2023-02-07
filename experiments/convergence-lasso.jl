@@ -137,9 +137,9 @@ dual_gap_iter_plt = plot(;
     # ylims=(9e-5, 1e3)
 )
 add_to_plot!(dual_gap_iter_plt, 1:length(log_gd.iter_time), log_gd.dual_gap, "Gradient", :coral)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_dir.iter_time), log_dir.dual_gap, "ADMM, Exact", :red)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_nys.iter_time), log_nys.dual_gap, "ADMM, Nystrom", :green)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_sketch.iter_time), log_sketch.dual_gap, "Sketch", :purple)
+add_to_plot!(dual_gap_iter_plt, 1:length(log_dir.iter_time), log_dir.dual_gap, "ADMM (exact)", :red)
+add_to_plot!(dual_gap_iter_plt, 1:length(log_nys.iter_time), log_nys.dual_gap, "NysADMM", :mediumblue)
 savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "lasso-dual-gap.pdf"))
 
 rp_iter_plt = plot(; 
@@ -152,9 +152,9 @@ rp_iter_plt = plot(;
     legend=:topright,
 )
 add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :coral)
-add_to_plot!(rp_iter_plt, 1:length(log_dir.iter_time), log_dir.rp, "ADMM (Exact)", :red)
 add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple)
-add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "ADMM, Nystrom", :mediumblue)
+add_to_plot!(rp_iter_plt, 1:length(log_dir.iter_time), log_dir.rp, "ADMM (exact)", :red)
+add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue)
 savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp.pdf"))
 
 rd_iter_plt = plot(; 
@@ -168,8 +168,8 @@ rd_iter_plt = plot(;
 )
 add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :coral)
 add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple)
-add_to_plot!(rd_iter_plt, 1:length(log_dir.iter_time), log_dir.rd, "ADMM, Exact", :red)
-add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "ADMM, Nystrom", :mediumblue)
+add_to_plot!(rd_iter_plt, 1:length(log_dir.iter_time), log_dir.rd, "ADMM (exact)", :red)
+add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue)
 savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd.pdf"))
 
 obj_val_iter_plt = plot(; 
@@ -184,14 +184,14 @@ obj_val_iter_plt = plot(;
 )
 add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), abs.(log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
 add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), abs.(log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple)
-add_to_plot!(obj_val_iter_plt, 1:length(log_dir.iter_time), abs.(log_dir.obj_val .- pstar)./pstar, "ADMM, Exact", :red)
-add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), abs.(log_nys.obj_val .- pstar)./pstar, "ADMM, Nystrom", :mediumblue)
+add_to_plot!(obj_val_iter_plt, 1:length(log_dir.iter_time), abs.(log_dir.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
+add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), abs.(log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue)
 # add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), (log_nys.obj_val .- pstar_nys)./pstar_nys, "ADMM, Nystrom (pstar Nys)", :mediumblue)
 savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val.pdf"))
 
 lasso_plt = plot(; 
     dpi=300,
-    title="Convergence (Lasso)",
+    # title="Convergence (Lasso)",
     yaxis=:log,
     xlabel="Iteration",
     legend=:topright,
@@ -202,6 +202,6 @@ lasso_plt = plot(;
 )
 add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.rp, "Primal Residual", :indigo)
 add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.rd, "Dual Residual", :red)
-add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.dual_gap, "Duality Gap (relative)", :mediumblue)
+add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.dual_gap, "Duality Gap", :mediumblue)
 add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black; style=:dash, lw=1)
 savefig(lasso_plt, joinpath(FIGS_PATH, "lasso.pdf"))

@@ -177,9 +177,9 @@ dual_gap_iter_plt = plot(;
     legend=:bottomright,
 )
 add_to_plot!(dual_gap_iter_plt, 1:length(log_gd.iter_time), log_gd.dual_gap, "Gradient", :coral)
+add_to_plot!(dual_gap_iter_plt, 1:length(log_sketch.iter_time), log_sketch.dual_gap, "Sketch", :purple)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_exact.iter_time), log_exact.dual_gap, "ADMM (exact)", :red)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_nys.iter_time), log_nys.dual_gap, "NysADMM", :mediumblue)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_sketch.iter_time), log_sketch.dual_gap, "Sketch", :purple)
 savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "logistic-dual-gap.pdf"))
 
 rp_iter_plt = plot(; 
@@ -229,7 +229,7 @@ savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "logistic-obj-val.pdf"))
 
 logistic_plt = plot(; 
     dpi=300,
-    title="Convergence (Logistic Regression)",
+    # title="Convergence (Logistic Regression)",
     yaxis=:log,
     xlabel="Iteration",
     legend=:topright,
