@@ -4,7 +4,7 @@
 [![codecov](https://codecov.io/gh/tjdiamandis/GeNIADMM.jl/branch/main/graph/badge.svg?token=QC5TKORCG1)](https://codecov.io/gh/tjdiamandis/GeNIADMM.jl)
 
 This package contains the code to reproduce the figures in 
-On the (linear) convergence of Generalized Newton Inexact ADMM. 
+[On the (linear) convergence of Generalized Newton Inexact ADMM](https://arxiv.org/abs/2302.03863). 
 
 You can add the package locally directly from this repo:
 ```julia
