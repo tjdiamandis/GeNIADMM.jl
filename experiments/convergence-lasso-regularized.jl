@@ -2,15 +2,17 @@ using Pkg
 Pkg.activate(joinpath(@__DIR__))
 using OpenML, Tables, JLD2
 using Random, LinearAlgebra, SparseArrays
+using Plots, LaTeXStrings
 using JuMP, MosekTools
+
+Pkg.activate(joinpath(@__DIR__, ".."))
 using GeNIADMM
 
-
-DATAPATH = joinpath(@__DIR__, "data")
-DATAFILE = joinpath(DATAPATH, "real-sim.jld2")
+const DATAPATH = joinpath(@__DIR__, "data")
+const DATAFILE = joinpath(DATAPATH, "real-sim.jld2")
 
 # Set this to false if you have not yet downloaded the real-sim dataset
-HAVE_DATA = true
+const HAVE_DATA = true
 
 if !HAVE_DATA
     real_sim = OpenML.load(1578)
@@ -101,6 +103,13 @@ res_nys = GeNIADMM.solve!(
 )
 
 prob = GeNIADMM.LassoSolver(A, b, γ; ρ=10.0, μ=1.0)
+res_nys_summable = GeNIADMM.solve!(
+    prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
+    precondition=true, verbose=true, print_iter=100, rho_update_iter=1000,
+    multithreaded=true, summable_step_size=true
+)
+
+prob = GeNIADMM.LassoSolver(A, b, γ; ρ=10.0, μ=1.0)
 res_sketch = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
     precondition=true, verbose=true, print_iter=100, sketch_solve_x_update=true,
@@ -110,6 +119,7 @@ res_sketch = GeNIADMM.solve!(
 log_gd = res_gd.log
 log_dir = res_dir.log
 log_nys = res_nys.log
+log_nys_summable = res_nys_summable.log
 log_sketch = res_sketch.log
 log_opt = res_opt.log
 pstar_nys = res_opt.obj_val
@@ -118,8 +128,6 @@ pstar_nys = res_opt.obj_val
 ## Plots
 # - dual_gap, rp, rd, obj_val
 # - iter_time, linsys_time, precond_time, setup_time, solve_time
-using Plots, LaTeXStrings
-
 function add_to_plot!(plt, x, y, label, color; style=:solid, lw=3)
     start = findfirst(y[1:end-1] .> 0 .&& y[2:end] .> 0)
     inds = start:length(x)
@@ -146,6 +154,7 @@ add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :co
 add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple)
 add_to_plot!(rp_iter_plt, 1:length(log_dir.iter_time), log_dir.rp, "ADMM (exact)", :red)
 add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue)
+add_to_plot!(rp_iter_plt, 1:length(log_nys_summable.iter_time), log_nys_summable.rp, L"NysADMM $(1/t^2)$", :green)
 savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp-smooth.pdf"))
 
 rd_iter_plt = plot(; 
@@ -161,6 +170,7 @@ add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :co
 add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple)
 add_to_plot!(rd_iter_plt, 1:length(log_dir.iter_time), log_dir.rd, "ADMM (exact)", :red)
 add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue)
+add_to_plot!(rd_iter_plt, 1:length(log_nys_summable.iter_time), log_nys_summable.rd, L"NysADMM $(1/t^2)$", :green)
 savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd-smooth.pdf"))
 
 obj_val_iter_plt = plot(; 
@@ -177,5 +187,6 @@ add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), abs.(log_gd.obj_val .
 add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), abs.(log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple)
 add_to_plot!(obj_val_iter_plt, 1:length(log_dir.iter_time), abs.(log_dir.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
 add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), abs.(log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue)
+add_to_plot!(obj_val_iter_plt, 1:length(log_nys_summable.iter_time), abs.(log_nys_summable.obj_val .- pstar)./pstar, L"NysADMM $(1/t^2)$", :green)
 # add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), (log_nys.obj_val .- pstar_nys)./pstar_nys, "ADMM, Nystrom (pstar Nys)", :mediumblue)
 savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val-smooth.pdf"))
