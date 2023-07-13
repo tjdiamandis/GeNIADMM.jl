@@ -272,8 +272,9 @@ function update_x̃!(
     end
 
     if isnothing(linsys_tol)
-        linsys_tol = min(sqrt(solver.rp_norm * solver.rd_norm), 1e-1)
+        linsys_tol = sqrt(solver.rp_norm * solver.rd_norm)
     end
+    linsys_tol = min(linsys_tol, 1e-1)
 
     # warm start if past first iteration
     !isinf(solver.rp_norm) && warm_start!(linsys_solver, solver.x̃k)
