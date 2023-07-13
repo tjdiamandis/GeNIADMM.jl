@@ -261,7 +261,8 @@ function update_x̃!(
     solver::MLSolver,
     linsys_solver::CgSolver;
     P=I,
-    logging=false
+    logging=false,
+    linsys_tol=nothing
 )
     compute_rhs!(solver)
 
@@ -270,7 +271,9 @@ function update_x̃!(
         time_start = time_ns()
     end
 
-    linsys_tol = min(sqrt(solver.rp_norm * solver.rd_norm), 1e-1)
+    if isnothing(linsys_tol)
+        linsys_tol = min(sqrt(solver.rp_norm * solver.rd_norm), 1e-1)
+    end
 
     # warm start if past first iteration
     !isinf(solver.rp_norm) && warm_start!(linsys_solver, solver.x̃k)
@@ -316,7 +319,8 @@ function update_x̃!(
     solver::MLSolver,
     linsys_solver::Union{Cholesky, SuiteSparse.CHOLMOD.Factor};
     P=I, 
-    logging=false
+    logging=false,
+    linsys_tol=nothing,
 )
     compute_rhs!(solver)
     
@@ -482,8 +486,9 @@ function dual_gap!(solver::LogisticSolver{T}) where {T}
     
     # Note: νᵀb = 0
     ν = solver.vm
+    @inline fconj(w::T) = w > 0 && w < 1 ? (one(T) - w) * log(one(T) - w) + w * log(w) : Inf
     # ν .= clip.(ν, 1e-5, 1.0-1e-5)
-    @. ν = (one(T) - ν) * log(one(T) - ν) + ν * log(ν)
+    ν .= fconj.(ν)
     dual_obj = -sum(ν)
     # dual_obj = sum(x->(x > 0 && x < 1) ? (x - one(T))*log(one(T)-x) - x*log(x) : Inf, solver.vm)
 
@@ -505,17 +510,17 @@ function compute_residuals!(solver::MLSolver)
 end
 
 
-function update_ρ!(solver::MLSolver; μ=10, τ=2)
+function update_ρ!(solver::MLSolver; update_buffer=10, rho_update_factor=2)
     # NOTE: using scaled ADMM, so must rescale variable after ρ update
-    if solver.rp > μ * solver.rd
-        solver.ρ = solver.ρ * τ
+    if solver.rp > update_buffer * solver.rd
+        solver.ρ = solver.ρ * rho_update_factor
         solver.lhs_op.ρ[1] = solver.ρ
-        @. solver.yk *= 1 / τ
+        @. solver.yk *= 1 / rho_update_factor
         return true
-    elseif solver.rd > μ * solver.rp
-        solver.ρ = solver.ρ / τ
+    elseif solver.rd > update_buffer * solver.rp
+        solver.ρ = solver.ρ / rho_update_factor
         solver.lhs_op.ρ[1] = solver.ρ
-        @. solver.yk *= τ
+        @. solver.yk *= rho_update_factor
         return true
     end
 
@@ -564,7 +569,8 @@ function solve!(
     sketch_rank=10,
     logistic_exact_solve::Bool=false,
     sketch_solve_update_iter=20,
-    μ=1,
+    summable_step_size::Bool=false,
+    add_Enorm::Bool=true
 )
     !indirect && precondition && ArgumentError("Cannot precondition direct solve")
 
@@ -606,7 +612,7 @@ function solve!(
 
         
         r0 = n ≥ 1_000 ? 50 : m ÷ 20
-        P = build_preconditioner(solver, r0; μ=μ)
+        P = build_preconditioner(solver, r0; μ=solver.μ)
         precond_time = (time_ns() - precond_time_start) / 1e9
         
         r = length(P.A_nys.Λ.diag)
@@ -623,7 +629,11 @@ function solve!(
     elseif sketch_solve_x_update
         r = sketch_rank
         S = RP.NystromSketch_ATA(solver.lhs_op.A, r, r)
-        Enorm = typeof(solver) <: LassoSolver ? estimate_norm_E(QuadForm(solver.lhs_op.A), S) : Inf
+        if add_Enorm
+            Enorm = typeof(solver) <: LassoSolver ? estimate_norm_E(QuadForm(solver.lhs_op.A), S) : Inf
+        else
+            Enorm = 0.0
+        end
     end
 
     # --- Logging ---
@@ -670,14 +680,16 @@ function solve!(
                 @. solver.lhs_op.wk = solver.qk / (1 + exp(vm))
                 # -- Sketch --
                 S = NystromSketch_ATA_logistic(solver.lhs_op.A, r, solver)
-                Enorm = estimate_norm_E(QuadForm(solver.lhs_op.A), S)
+                Enorm = add_Enorm ? estimate_norm_E(QuadForm(solver.lhs_op.A), S) : 0.0
             end
             time_linsys = update_x̃_sketch!(solver, Enorm; P=S, logging=logging, r0=sketch_rank)
         elseif logistic_exact_solve
             time_linsys = update_x̃_exact!(solver; logging=logging)
         else
-            time_linsys = update_x̃!(solver, linsys_solver; P=P, logging=logging)
+            linsys_tol = summable_step_size ? 1.0/t^2 : nothing
+            time_linsys = update_x̃!(solver, linsys_solver; P=P, logging=logging, linsys_tol=linsys_tol)
         end
+        # t == 2 && error()
         update_x!(solver; relax=relax)
         solver.zk_old .= solver.zk
         update_z!(solver)

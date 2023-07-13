@@ -127,6 +127,7 @@ mutable struct LogisticSolver{T} <: MLSolver{T}
     γ::T                        # param : L1 regularization weight
     ρ::T                        # param : ADMM penalty
     α::T                        # param : relaxation
+    μ::T                        # param : regularizer (unused)
 
     function LogisticSolver(
         A::AbstractMatrix{T}, 
@@ -159,7 +160,8 @@ mutable struct LogisticSolver{T} <: MLSolver{T}
             zero(T),
             γ,
             ρ,
-            α
+            α,
+            zero(T)
         )
     end
 end
