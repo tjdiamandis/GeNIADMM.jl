@@ -91,13 +91,6 @@ prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
 res_nys = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
     precondition=true, verbose=true, print_iter=100, rho_update_iter=1000,
-    multithreaded=true
-)
-
-prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
-res_nys_summable = GeNIADMM.solve!(
-    prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
-    precondition=true, verbose=true, print_iter=100, rho_update_iter=1000,
     multithreaded=true, summable_step_size=true
 )
 
@@ -113,7 +106,7 @@ prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
 res_opt = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=1000, tol=1e-10, logging=true,
     precondition=true, verbose=true, print_iter=100, rho_update_iter=1000,
-    multithreaded=true
+    multithreaded=true, summable_step_size=true
 )
 pstar_nys = res_opt.obj_val
 
@@ -129,7 +122,6 @@ save(SAVEFILE,
     "res_gd", res_gd,
     "res_exact", res_exact,
     "res_nys", res_nys,
-    "res_nys_summable", res_nys_summable,
     "res_sketch", res_sketch,
     "res_sketch_no_correction", res_sketch_no_correction,
     "res_opt", res_opt,
@@ -137,12 +129,11 @@ save(SAVEFILE,
 )
 
 ## Load data
-res_gd, res_exact, res_nys, res_nys_summable, res_sketch, res_sketch_no_correction, res_opt, pstar = load(
+res_gd, res_exact, res_nys, res_sketch, res_sketch_no_correction, res_opt, pstar = load(
     SAVEFILE, 
     "res_gd",
     "res_exact",
     "res_nys",
-    "res_nys_summable",
     "res_sketch",
     "res_sketch_no_correction",
     "res_opt",
@@ -151,7 +142,6 @@ res_gd, res_exact, res_nys, res_nys_summable, res_sketch, res_sketch_no_correcti
 
 log_gd = res_gd.log
 log_nys = res_nys.log
-log_nys_summable = res_nys_summable.log
 log_exact = res_exact.log
 log_sketch = res_sketch.log
 log_sketch_no_correction = res_sketch_no_correction.log
@@ -166,10 +156,6 @@ log_opt = res_opt.log
 @printf("\nNysADMM:")
 @printf("- setup:    %6.3f", log_nys.setup_time)
 @printf("- iter:    %6.3f", log_nys.solve_time / length(log_nys.dual_gap))
-
-@printf("\nNysADMM (Summable):")
-@printf("- setup:    %6.3f", log_nys_summable.setup_time)
-@printf("- iter:    %6.3f", log_nys_summable.solve_time / length(log_nys_summable.dual_gap))
 
 @printf("\nGradient Descent:")
 @printf("- setup:    %6.3f", log_gd.setup_time)
@@ -206,8 +192,7 @@ dual_gap_iter_plt = plot(;
 add_to_plot!(dual_gap_iter_plt, 1:length(log_gd.iter_time), log_gd.dual_gap, "Gradient", :coral)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_sketch.iter_time), log_sketch.dual_gap, "Sketch", :purple)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_exact.iter_time), log_exact.dual_gap, "ADMM (exact)", :red)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_nys.iter_time), log_nys.dual_gap, "NysADMM", :mediumblue)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_nys_summable.iter_time), log_nys_summable.dual_gap, L"NysADMM $(1/t^2)$", :green)
+add_to_plot!(dual_gap_iter_plt, 1:length(log_nys.iter_time), log_nys.dual_gap, "NysADMM", :mediumblue; style=:dash)
 savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "logistic-dual-gap.pdf"))
 
 rp_iter_plt = plot(; 
@@ -222,8 +207,7 @@ rp_iter_plt = plot(;
 add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :coral)
 add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple)
 add_to_plot!(rp_iter_plt, 1:length(log_exact.iter_time), log_exact.rp, "ADMM (exact)", :red)
-add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue)
-add_to_plot!(rp_iter_plt, 1:length(log_nys_summable.iter_time), log_nys_summable.rp, L"NysADMM $(1/t^2)$", :green)
+add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue; style=:dash)
 savefig(rp_iter_plt, joinpath(FIGS_PATH, "logistic-rp.pdf"))
 
 rd_iter_plt = plot(; 
@@ -238,8 +222,7 @@ rd_iter_plt = plot(;
 add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :coral)
 add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple)
 add_to_plot!(rd_iter_plt, 1:length(log_exact.iter_time), log_exact.rd, "ADMM (exact)", :red)
-add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue)
-add_to_plot!(rd_iter_plt, 1:length(log_nys_summable.iter_time), log_nys_summable.rd, L"NysADMM $(1/t^2)$", :green)
+add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue; style=:dash)
 savefig(rd_iter_plt, joinpath(FIGS_PATH, "logistic-rd.pdf"))
 
 obj_val_iter_plt = plot(; 
@@ -254,8 +237,7 @@ obj_val_iter_plt = plot(;
 add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), (log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
 add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), (log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple)
 add_to_plot!(obj_val_iter_plt, 1:length(log_exact.iter_time), (log_exact.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
-add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), (log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue)
-add_to_plot!(obj_val_iter_plt, 1:length(log_nys_summable.iter_time), (log_nys_summable.obj_val .- pstar)./pstar, L"NysADMM $(1/t^2)$", :green)
+add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), (log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue; style=:dash)
 savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "logistic-obj-val.pdf"))
 
 logistic_plt = plot(; 
@@ -271,7 +253,7 @@ logistic_plt = plot(;
 add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), log_opt.rp, "Primal Residual", :indigo)
 add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), log_opt.rd, "Dual Residual", :red)
 add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), log_opt.dual_gap, "Duality Gap", :mediumblue)
-add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black; style=:dash, lw=1)
+add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black, lw=1)
 savefig(logistic_plt, joinpath(FIGS_PATH, "logistic.pdf"))
 
 
@@ -356,4 +338,4 @@ logistic_plt = plot(;
 add_to_plot!(logistic_plt, log_opt.iter_time, log_opt.rp, "Primal Residual", :indigo)
 add_to_plot!(logistic_plt, log_opt.iter_time, log_opt.rd, "Dual Residual", :red)
 add_to_plot!(logistic_plt, log_opt.iter_time, log_opt.dual_gap, "Duality Gap", :mediumblue)
-add_to_plot!(logistic_plt, log_opt.iter_time, sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black; style=:dash, lw=1)
+add_to_plot!(logistic_plt, log_opt.iter_time, sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black, lw=1)

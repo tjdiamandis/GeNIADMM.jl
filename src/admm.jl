@@ -271,16 +271,14 @@ function update_x̃!(
         time_start = time_ns()
     end
 
-    if isnothing(linsys_tol)
-        linsys_tol = sqrt(solver.rp_norm * solver.rd_norm)
-    end
-    linsys_tol = min(linsys_tol, 1e-1)
+    linsys_tol = isnothing(linsys_tol) ? 1.0 : linsys_tol
+    linsys_tol = min(sqrt(solver.rp_norm * solver.rd_norm), 1.0) * linsys_tol
 
     # warm start if past first iteration
     !isinf(solver.rp_norm) && warm_start!(linsys_solver, solver.x̃k)
     cg!(
         linsys_solver, solver.lhs_op, solver.rhs;
-        M=P, rtol=linsys_tol
+        M=P, atol=linsys_tol
     )
     !issolved(linsys_solver) && error("CG failed")
     solver.x̃k .= linsys_solver.x
@@ -687,7 +685,7 @@ function solve!(
         elseif logistic_exact_solve
             time_linsys = update_x̃_exact!(solver; logging=logging)
         else
-            linsys_tol = summable_step_size ? 1.0/t^2 : nothing
+            linsys_tol = summable_step_size ? 1.0/t^1.5 : nothing
             time_linsys = update_x̃!(solver, linsys_solver; P=P, logging=logging, linsys_tol=linsys_tol)
         end
         # t == 2 && error()

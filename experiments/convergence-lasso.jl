@@ -83,7 +83,7 @@ prob = GeNIADMM.LassoSolver(A, b, γ; ρ=1.0)
 res_opt = GeNIADMM.solve!(
     prob; indirect=true, relax=true, max_iters=1000, tol=1e-10, logging=true,
     precondition=true, verbose=true, print_iter=100, rho_update_iter=1000,
-    multithreaded=true
+    multithreaded=true, summable_step_size=true
 )
 
 prob = GeNIADMM.LassoSolver(A, b, γ; ρ=1.0)
@@ -95,13 +95,6 @@ res_dir = GeNIADMM.solve!(
 
 prob = GeNIADMM.LassoSolver(A, b, γ; ρ=1.0)
 res_nys = GeNIADMM.solve!(
-    prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
-    precondition=true, verbose=true, print_iter=100, rho_update_iter=1000,
-    multithreaded=true
-)
-
-prob = GeNIADMM.LassoSolver(A, b, γ; ρ=1.0)
-res_nys_summable = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
     precondition=true, verbose=true, print_iter=100, rho_update_iter=1000,
     multithreaded=true, summable_step_size=true
@@ -125,7 +118,6 @@ res_sketch_no_correction = GeNIADMM.solve!(
 log_gd = res_gd.log
 log_dir = res_dir.log
 log_nys = res_nys.log
-log_nys_summable = res_nys_summable.log
 log_sketch = res_sketch.log
 log_sketch_no_correction = res_sketch_no_correction.log
 log_opt = res_opt.log
@@ -136,14 +128,16 @@ pstar_nys = res_opt.obj_val
 # - dual_gap, rp, rd, obj_val
 # - iter_time, linsys_time, precond_time, setup_time, solve_time
 
-function add_to_plot!(plt, x, y, label, color; style=:solid, lw=3)
+function add_to_plot!(plt, x, y, label, color; style=:solid, lw=3, marker=:none, alpha=1.0)
     start = findfirst(y[1:end-1] .> 0 .&& y[2:end] .> 0)
     inds = start:length(x)
     plot!(plt, x[inds], y[inds],
     label=label,
     lw=lw,
     linecolor=color,
-    linestyle=style
+    linestyle=style,
+    marker=marker,
+    linealpha=alpha
 )
 end
 
@@ -162,8 +156,7 @@ dual_gap_iter_plt = plot(;
 add_to_plot!(dual_gap_iter_plt, 1:length(log_gd.iter_time), log_gd.dual_gap, "Gradient", :coral)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_sketch.iter_time), log_sketch.dual_gap, "Sketch", :purple)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_dir.iter_time), log_dir.dual_gap, "ADMM (exact)", :red)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_nys.iter_time), log_nys.dual_gap, "NysADMM", :mediumblue)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_nys_summable.iter_time), log_nys_summable.dual_gap, "NysADMM (1/t^2)", :green)
+add_to_plot!(dual_gap_iter_plt, 1:length(log_nys.iter_time), log_nys.dual_gap, "NysADMM", :mediumblue, style=:dash)
 savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "lasso-dual-gap.pdf"))
 
 rp_iter_plt = plot(; 
@@ -178,8 +171,7 @@ rp_iter_plt = plot(;
 add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :coral)
 add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple)
 add_to_plot!(rp_iter_plt, 1:length(log_dir.iter_time), log_dir.rp, "ADMM (exact)", :red)
-add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue)
-add_to_plot!(rp_iter_plt, 1:length(log_nys_summable.iter_time), log_nys_summable.rp, "NysADMM (1/t^2)", :green)
+add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue, style=:dash)
 savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp.pdf"))
 
 rd_iter_plt = plot(; 
@@ -194,8 +186,7 @@ rd_iter_plt = plot(;
 add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :coral)
 add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple)
 add_to_plot!(rd_iter_plt, 1:length(log_dir.iter_time), log_dir.rd, "ADMM (exact)", :red)
-add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue)
-add_to_plot!(rd_iter_plt, 1:length(log_nys_summable.iter_time), log_nys_summable.rd, "NysADMM (1/t^2)", :green)
+add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue, style=:dash)
 savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd.pdf"))
 
 obj_val_iter_plt = plot(; 
@@ -211,8 +202,7 @@ obj_val_iter_plt = plot(;
 add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), abs.(log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
 add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), abs.(log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple)
 add_to_plot!(obj_val_iter_plt, 1:length(log_dir.iter_time), abs.(log_dir.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
-add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), abs.(log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue)
-add_to_plot!(obj_val_iter_plt, 1:length(log_nys_summable.iter_time), abs.(log_nys_summable.obj_val .- pstar)./pstar, "NysADMM (1/t^2)", :green)
+add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), abs.(log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue, style=:dash)
 savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val.pdf"))
 
 lasso_plt = plot(; 
