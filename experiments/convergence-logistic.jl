@@ -49,7 +49,7 @@ function build_sparse_logit_model(A, b, γ)
     @variable(model, x[1:p])
     @variable(model, t[1:n])
     for i in 1:n
-        u = -(A[i, :]' * x) * b[i]
+        u = (A[i, :]' * x) * b[i]
         softplus(model, t[i], u)
     end
     # Add ℓ1 regularization
@@ -70,6 +70,8 @@ set_optimizer_attribute(logistic_model, "MSK_DPAR_INTPNT_CO_TOL_NEAR_REL", 1.0)
 set_optimizer_attribute(logistic_model, "MSK_IPAR_PRESOLVE_USE", 0)
 JuMP.optimize!(logistic_model)
 pstar = objective_value(logistic_model)
+xstar = value.(logistic_model[:x])
+# xstar[abs.(xstar) .< 1e-3] .= 0
 
 
 ## Solve
@@ -77,7 +79,7 @@ prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
 res_gd = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
     precondition=false, verbose=true, print_iter=100, gd_x_update=true,
-    rho_update_iter=1000, multithreaded=true
+    rho_update_iter=1000, multithreaded=true, xstar=xstar
 )
 
 prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
@@ -87,11 +89,11 @@ res_exact = GeNIADMM.solve!(
     logistic_exact_solve=true, multithreaded=true
 )
 
-prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
+prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0, α=1.0)
 res_nys = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
     precondition=true, verbose=true, print_iter=100, rho_update_iter=1000,
-    multithreaded=true, summable_step_size=true
+    multithreaded=true, summable_step_size=true, xstar=xstar
 )
 
 prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
@@ -99,7 +101,7 @@ res_sketch = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
     precondition=false, verbose=true, print_iter=100, sketch_solve_x_update=true,
     sketch_rank=500, rho_update_iter=1000,
-    multithreaded=true
+    multithreaded=true, xstar=xstar
 )
 
 prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
@@ -339,3 +341,20 @@ add_to_plot!(logistic_plt, log_opt.iter_time, log_opt.rp, "Primal Residual", :in
 add_to_plot!(logistic_plt, log_opt.iter_time, log_opt.rd, "Dual Residual", :red)
 add_to_plot!(logistic_plt, log_opt.iter_time, log_opt.dual_gap, "Duality Gap", :mediumblue)
 add_to_plot!(logistic_plt, log_opt.iter_time, sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black, lw=1)
+
+
+# Assumption 6.2 plot
+assump_plt = plot(; 
+    dpi=300,
+    legendfontsize=11,
+    labelfontsize=11,
+    yaxis=:log,
+    ylabel=L"$\|\|\nabla f(x^\star) - (\nabla f(\tilde x^k) + H_f(\tilde x^k)(x^\star - \tilde x^k))\|\|$",
+    xlabel="Iteration",
+    legend=:bottomright,
+)
+add_to_plot!(assump_plt, 1:length(log_gd.iter_time), log_gd.assump, "Gradient", :coral)
+add_to_plot!(assump_plt, 1:length(log_sketch.iter_time), log_sketch.assump, "Sketch", :purple)
+# add_to_plot!(assump_plt, 1:length(log_exact.iter_time), log_exact.assump, "ADMM (exact)", :red)
+add_to_plot!(assump_plt, 1:length(log_nys.iter_time), log_nys.assump, "NysADMM", :mediumblue)
+savefig(assump_plt, joinpath(FIGS_PATH, "logistic-assump.pdf"))

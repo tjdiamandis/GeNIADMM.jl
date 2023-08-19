@@ -569,7 +569,8 @@ function solve!(
     logistic_exact_solve::Bool=false,
     sketch_solve_update_iter=20,
     summable_step_size::Bool=false,
-    add_Enorm::Bool=true
+    add_Enorm::Bool=true,
+    xstar::Union{Vector{Float64},Nothing}=nothing,
 )
     !indirect && precondition && ArgumentError("Cannot precondition direct solve")
 
@@ -655,6 +656,20 @@ function solve!(
         Inf, solver.ρ, 0.0
     ))
 
+    # --- to test assumption 6.2 ---
+    if !isnothing(xstar)
+        ∇f_xstar = zeros(n)
+        # (Logistic regresiso) pred = Ax ⟹ vmᵢ = bᵢãᵢᵀx
+        pred = solver.vm
+        mul!(pred, solver.lhs_op.A, xstar)
+        @. pred *= solver.data.b
+
+        # qᵏ = exp(vm) / (1 + exp(vm))
+        @. solver.qk = logistic(pred)
+        @. solver.qk *= solver.data.b
+        mul!(∇f_xstar, solver.lhs_op.A', solver.qk)
+    end
+
     # --------------------------------------------------------------------------
     # --------------------- ITERATIONS -----------------------------------------
     # --------------------------------------------------------------------------
@@ -723,6 +738,36 @@ function solve!(
         obj_val!(solver)
         dual_gap!(solver)
 
+        # --- Assumption 6.2 ---
+        if !isnothing(xstar)
+            vm, vn = solver.vm, solver.vn
+            
+            # (Logistic regression ONLY) 
+            # pred = Ax ⟹ vmᵢ = bᵢãᵢᵀx
+            mul!(vm, solver.lhs_op.A, solver.xk)
+            @. vm *= solver.data.b
+    
+            # qᵏ = ℓ'(pred) = exp(vm) / (1 + exp(vm))
+            @. solver.qk = logistic(vm)
+    
+            # wᵏ = ℓ''(pred) = exp(vm) / (1 + exp(vm))² = qᵏ / (1 + exp(vm))
+            @. solver.lhs_op.wk = solver.qk / (1 + exp(vm))
+
+            # compute ∇²f(xᵏ)(x* - xᵏ) = Aᵀdiag(wᵏ)A(x* - xᵏ)
+            @. vn = xstar - solver.xk
+            mul!(vm, solver.lhs_op.A, vn)
+            @. vm *= solver.lhs_op.wk
+            mul!(vn, solver.lhs_op.A', vm)
+
+            # add ∇f(xᵏ): vn = Aᵀqᵏ + ∇²f(xᵏ)(x* - xᵏ)
+            @. solver.qk *= solver.data.b
+            mul!(vn, solver.lhs_op.A', solver.qk, 1.0, 1.0)
+
+            # subtract from ∇f(x*)
+            @. vn = ∇f_xstar - vn
+            assump_norm = norm(vn)
+        end
+
         # --- Logging ---
         time_sec = (time_ns() - solve_time_start) / 1e9
         if logging
@@ -732,6 +777,7 @@ function solve!(
             tmp_log.linsys_time[t] = time_linsys
             tmp_log.rp[t] = solver.rp_norm
             tmp_log.rd[t] = solver.rd_norm
+            tmp_log.assump[t] = isnothing(xstar) ? 0.0 : assump_norm
         end
 
         # --- Printing ---
@@ -777,6 +823,7 @@ function solve!(
             tmp_log.dual_gap[1:t-1], tmp_log.obj_val[1:t-1], tmp_log.iter_time[1:t-1],
             tmp_log.linsys_time[1:t-1],
             tmp_log.rp[1:t-1], tmp_log.rd[1:t-1],
+            tmp_log.assump[1:t-1],
             setup_time, precond_time, solve_time
         )
     else

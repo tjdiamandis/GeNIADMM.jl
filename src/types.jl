@@ -53,7 +53,7 @@ mutable struct LassoSolver{T} <: MLSolver{T}
         b::AbstractVector{T}, 
         γ::T; 
         ρ=1.0, 
-        α=1.5,
+        α=1.0,
         μ=0.0
     ) where {T <: AbstractFloat}
         data = LassoProblemData(A, b)
@@ -134,7 +134,7 @@ mutable struct LogisticSolver{T} <: MLSolver{T}
         b::AbstractVector{T}, 
         γ::T; 
         ρ=1.0, 
-        α=1.5
+        α=1.0
     ) where {T <: AbstractFloat}
         data = LogisticProblemData(A, b)
         m, n = size(A)
@@ -174,13 +174,14 @@ struct NysADMMLog{T <: AbstractFloat}
     linsys_time::Union{AbstractVector{T}, Nothing}
     rp::Union{AbstractVector{T}, Nothing}
     rd::Union{AbstractVector{T}, Nothing}
+    assump::Union{AbstractVector{T}, Nothing}
     setup_time::T
     precond_time::T
     solve_time::T
 end
 function NysADMMLog(setup_time::T, precond_time::T, solve_time::T) where {T <: AbstractFloat}
     return NysADMMLog(
-        nothing, nothing, nothing, nothing, nothing, nothing,
+        nothing, nothing, nothing, nothing, nothing, nothing, nothing,
         setup_time, precond_time, solve_time
     )
 end
@@ -188,6 +189,7 @@ end
 
 function create_temp_log(max_iters::Int)
     return NysADMMLog(
+        zeros(max_iters),
         zeros(max_iters),
         zeros(max_iters),
         zeros(max_iters),

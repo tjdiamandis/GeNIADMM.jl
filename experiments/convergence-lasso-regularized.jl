@@ -106,9 +106,6 @@ log_gd = res_gd.log
 log_dir = res_dir.log
 log_nys = res_nys.log
 log_sketch = res_sketch.log
-log_opt = res_opt.log
-pstar_nys = res_opt.obj_val
-@show pstar_nys - pstar
 
 ## Plots
 # - dual_gap, rp, rd, obj_val
