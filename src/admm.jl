@@ -168,6 +168,81 @@ function update_x̃_gd!(
     end
 end
 
+# Accelerated Gradient Descent ADMM (full subproblem solve)
+# -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+function update_x̃_agd!(
+    solver::Union{LassoSolver, LogisticSolver};
+    P=I,
+    logging=false,
+    tol=nothing,
+    max_iter = 5,
+)
+    compute_rhs!(solver)
+
+    # if logging, time the GD step
+    if logging
+        time_start = time_ns()
+    end
+
+    tol = isnothing(tol) ? 1.0 : tol
+    tol = min(sqrt(solver.rp_norm * solver.rd_norm), 1.0) * tol
+
+    iter = 0
+    @. solver.x̃k_old = solver.x̃k
+    while iter == 0 || (norm(solver.vgrad) > 2*solver.ρ*tol && iter < max_iter)
+        # compute intermediate step
+        if iter > 0
+            @. solver.vn = solver.x̃k + (iter + 1) / (iter + 4) * (solver.x̃k - solver.x̃k_old)
+        else
+            @. solver.vn = solver.x̃k
+        end
+
+        @. solver.x̃k_old = solver.x̃k
+        agd_step!(solver, P)
+        iter += 1
+    end 
+    
+    if logging 
+        return (time_ns() - time_start) / 1e9
+    else
+        return nothing
+    end
+end
+
+# intermediate is stored in solver.vn
+function agd_step!(solver::LassoSolver, P)
+    # --- compute gradient ---
+    mul!(solver.Az, solver.lhs_op.A, solver.vn)
+    mul!(solver.ATAz, solver.lhs_op.A', solver.Az)
+    @. solver.vgrad =  solver.ATAz + (solver.ρ + solver.μ)*solver.vn - solver.rhs
+    
+    # --- gradient step ---
+    # P = λmax(AᵀA)
+    η = 1 / (1.1P + solver.ρ + solver.μ)
+    @. solver.x̃k = solver.vn - η * solver.vgrad
+end
+
+# intermediate is stored in solver.vn
+function agd_step!(solver::LogisticSolver, P)
+        # --- compute gradient ---
+        # vm = Ax ⟹ vmᵢ = bᵢãᵢᵀx
+        vm = solver.vm
+        mul!(vm, solver.lhs_op.A, solver.vn)
+        @. vm *= solver.data.b
+    
+        # qᵏ = exp(vm) / (1 + exp(vm))
+        @. solver.qk = logistic(vm)
+        @. solver.qk *= solver.data.b
+        mul!(solver.vgrad, solver.lhs_op.A', solver.qk)
+        @. solver.vgrad = solver.vgrad + solver.ρ*(solver.vn - solver.zk + solver.yk)
+
+        # --- gradient step ---
+        # P = λmax(AᵀA) ≥ λmax(Aᵀdiag(wᵏ)A) since wᵏ ≤ 1
+        η = 1 / (1.1P + solver.ρ)
+        @. solver.x̃k = solver.vn - η * solver.vgrad
+end
+
 
 # Sketch and Solve ADMM
 # -----------------------------------------------------------------------------
@@ -564,6 +639,7 @@ function solve!(
     verbose::Bool=true,
     multithreaded::Bool=false,
     gd_x_update::Bool=false,
+    agd_x_update::Bool=false,
     sketch_solve_x_update::Bool=false,
     sketch_rank=10,
     logistic_exact_solve::Bool=false,
@@ -624,7 +700,7 @@ function solve!(
         P = I
     end
 
-    if gd_x_update
+    if gd_x_update || agd_x_update
         P = RP.eigmax_power(QuadForm(solver.lhs_op.A); q=10)
     elseif sketch_solve_x_update
         r = sketch_rank
@@ -679,8 +755,11 @@ function solve!(
         !converged(solver, tol)
 
         # --- Update Iterates ---
+        linsys_tol = summable_step_size ? 1.0/t^1.5 : nothing
         if gd_x_update
             time_linsys = update_x̃_gd!(solver; P=P, logging=logging)
+        elseif agd_x_update
+            time_linsys = update_x̃_agd!(solver; P=P, logging=logging, tol=linsys_tol)
         elseif sketch_solve_x_update
             if typeof(solver) <: LogisticSolver && (t == 1 || t % sketch_solve_update_iter == 0)
                 #  -- Update wk --
@@ -700,7 +779,6 @@ function solve!(
         elseif logistic_exact_solve
             time_linsys = update_x̃_exact!(solver; logging=logging)
         else
-            linsys_tol = summable_step_size ? 1.0/t^1.5 : nothing
             time_linsys = update_x̃!(solver, linsys_solver; P=P, logging=logging, linsys_tol=linsys_tol)
         end
         # t == 2 && error()
@@ -720,7 +798,7 @@ function solve!(
                 # NOTE: logistic solver recomputes fact at each iteration anyway
                 KKT_mat[diagind(KKT_mat)] .+= (solver.ρ .- ρ_old)
                 linsys_solver = cholesky(KKT_mat)
-            elseif updated_rho && precondition && !(sketch_solve_x_update || gd_x_update)
+            elseif updated_rho && precondition && !(sketch_solve_x_update || gd_x_update || agd_x_update)
                 reg_term = typeof(solver) <: LogisticSolver ? solver.ρ : solver.ρ + solver.μ
                 P = RP.NystromPreconditionerInverse(P.A_nys, reg_term)
             end

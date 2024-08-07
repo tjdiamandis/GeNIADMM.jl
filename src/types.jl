@@ -29,6 +29,7 @@ mutable struct LassoSolver{T} <: MLSolver{T}
     lhs_op::LassoLinearOperator{T}
     xk::AbstractVector{T}       # var   : primal (loss)
     x̃k::AbstractVector{T}       # var   : primal (loss--for relaxation)
+    x̃k_old::AbstractVector{T}       # var   : primal (loss--for relaxation)
     zk::AbstractVector{T}       # var   : primal (reg)
     zk_old::AbstractVector{T}   # var   : dual (prev step)
     yk::AbstractVector{T}       # var   : dual
@@ -38,6 +39,7 @@ mutable struct LassoSolver{T} <: MLSolver{T}
     Az::AbstractVector{T}       # cache : Az (size m)
     ATAz::AbstractVector{T}     # cache : AᵀAz (size n)
     vn::AbstractVector{T}       # cache : v = AᵀAz - y (size n)
+    vgrad::AbstractVector{T}    # cache
     obj_val::T                  # log   : 0.5*||Ax - b||² + γ|x|₁
     loss::T                     # log   : 0.5*||Ax - b||² (uses zk)
     dual_gap::T                 # log   : obj_val - g(ν)
@@ -69,7 +71,9 @@ mutable struct LassoSolver{T} <: MLSolver{T}
             zeros(T, n),
             zeros(T, n),
             zeros(T, n),
+            zeros(T, n),
             zeros(T, m),
+            zeros(T, n),
             zeros(T, n),
             zeros(T, n),
             zero(T),
@@ -108,6 +112,7 @@ mutable struct LogisticSolver{T} <: MLSolver{T}
     lhs_op::LogisticLinearOperator{T}
     xk::AbstractVector{T}       # var   : primal (loss)
     x̃k::AbstractVector{T}       # var   : primal (loss--for relaxation)
+    x̃k_old::AbstractVector{T}   # var   : primal (loss--for relaxation)
     zk::AbstractVector{T}       # var   : primal (reg)
     zk_old::AbstractVector{T}   # var   : dual (prev step)
     yk::AbstractVector{T}       # var   : dual
@@ -117,6 +122,7 @@ mutable struct LogisticSolver{T} <: MLSolver{T}
     # ATAz::AbstractVector{T}     # cache : AᵀAz (size n)
     vm::AbstractVector{T}       # cache: (size m)
     vn::AbstractVector{T}       # cache : v = AᵀAz - y (size n)
+    vgrad::AbstractVector{T}    # cache
     rp::AbstractVector{T}       # resid : primal
     rd::AbstractVector{T}       # resid : dual
     obj_val::T                  # log   : 0.5*||Ax - b||² + γ|x|₁
@@ -146,10 +152,12 @@ mutable struct LogisticSolver{T} <: MLSolver{T}
             zeros(T, n),
             zeros(T, n),
             zeros(T, n),
+            zeros(T, n),
             zeros(T, m),
             zeros(T, n),
             zeros(T, m),
             zeros(T, m),
+            zeros(T, n),
             zeros(T, n),
             zeros(T, n),
             zeros(T, n),
