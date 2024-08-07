@@ -10,6 +10,7 @@ using GeNIADMM
 
 const DATAPATH = joinpath(@__DIR__, "data")
 const DATAFILE = joinpath(DATAPATH, "real-sim.jld2")
+const SAVEFILE = joinpath(DATAPATH, "lasso-regularized.jld2")
 
 # Set this to false if you have not yet downloaded the real-sim dataset
 const HAVE_DATA = true
@@ -82,6 +83,13 @@ res_gd = GeNIADMM.solve!(
 )
 
 prob = GeNIADMM.LassoSolver(A, b, γ; ρ=10.0, μ=1.0)
+res_agd = GeNIADMM.solve!(
+    prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
+    precondition=false, verbose=true, print_iter=100, agd_x_update=true,
+    rho_update_iter=1000, multithreaded=true
+)
+
+prob = GeNIADMM.LassoSolver(A, b, γ; ρ=10.0, μ=1.0)
 res_dir = GeNIADMM.solve!(
     prob; indirect=false, relax=false, max_iters=1000, tol=1e-4, logging=true,
     precondition=false, verbose=true, print_iter=100, rho_update_iter=1000,
@@ -102,7 +110,29 @@ res_sketch = GeNIADMM.solve!(
     sketch_rank=500, rho_update_iter=1000, multithreaded=true
 )
 
+save(SAVEFILE, 
+    "res_gd", res_gd,
+    "res_agd", res_agd,
+    "res_dir", res_dir,
+    "res_nys", res_nys,
+    "res_sketch", res_sketch,
+    "pstar", pstar
+)
+
+## Load data
+res_gd, res_agd, res_dir, res_nys, res_sketch, pstar = load(
+    SAVEFILE, 
+    "res_gd",
+    "res_agd",
+    "res_dir",
+    "res_nys",
+    "res_sketch",
+    "pstar"
+)
+
+
 log_gd = res_gd.log
+log_agd = res_agd.log
 log_dir = res_dir.log
 log_nys = res_nys.log
 log_sketch = res_sketch.log
@@ -133,10 +163,11 @@ rp_iter_plt = plot(;
     labelfontsize=14,
 )
 add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :coral)
+add_to_plot!(rp_iter_plt, 1:length(log_agd.iter_time), log_agd.rp, "AGD", :firebrick)
 add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple)
 add_to_plot!(rp_iter_plt, 1:length(log_dir.iter_time), log_dir.rp, "ADMM (exact)", :red)
 add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue; style=:dash)
-savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp-smooth.pdf"))
+savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp-smooth-aug24.pdf"))
 
 rd_iter_plt = plot(; 
     dpi=300,
@@ -148,10 +179,11 @@ rd_iter_plt = plot(;
     labelfontsize=14,
 )
 add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :coral)
+add_to_plot!(rd_iter_plt, 1:length(log_agd.iter_time), log_agd.rd, "AGD", :firebrick)
 add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple)
 add_to_plot!(rd_iter_plt, 1:length(log_dir.iter_time), log_dir.rd, "ADMM (exact)", :red)
 add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue; style=:dash)
-savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd-smooth.pdf"))
+savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd-smooth-aug24.pdf"))
 
 obj_val_iter_plt = plot(; 
     dpi=300,
@@ -164,8 +196,9 @@ obj_val_iter_plt = plot(;
     # ylims=(1e-8, 100)
 )
 add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), abs.(log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
+add_to_plot!(obj_val_iter_plt, 1:length(log_agd.iter_time), abs.(log_agd.obj_val .- pstar)./pstar, "AGD", :firebrick)
 add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), abs.(log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple)
 add_to_plot!(obj_val_iter_plt, 1:length(log_dir.iter_time), abs.(log_dir.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
 add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), abs.(log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue; style=:dash)
 # add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), (log_nys.obj_val .- pstar_nys)./pstar_nys, "ADMM, Nystrom (pstar Nys)", :mediumblue)
-savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val-smooth.pdf"))
+savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val-smooth-aug24.pdf"))

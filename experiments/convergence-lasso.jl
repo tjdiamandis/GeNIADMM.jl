@@ -10,6 +10,7 @@ using GeNIADMM
 
 const DATAPATH = joinpath(@__DIR__, "data")
 const DATAFILE = joinpath(DATAPATH, "real-sim.jld2")
+const SAVEFILE = joinpath(DATAPATH, "lasso.jld2")
 
 # Set this to false if you have not yet downloaded the real-sim dataset
 const HAVE_DATA = true
@@ -72,10 +73,17 @@ pstar = 0.5 * norm(A*zstar - b,2)^2 + γ * norm(zstar,1)
 
 
 ## Solve
-prob = GeNIADMM.LassoSolver(A, b, γ; ρ=10.0)
+prob = GeNIADMM.LassoSolver(A, b, γ; ρ=1.0)
 res_gd = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
     precondition=false, verbose=true, print_iter=100, gd_x_update=true,
+    rho_update_iter=1000, multithreaded=true
+)
+
+prob = GeNIADMM.LassoSolver(A, b, γ; ρ=1.0)
+res_agd = GeNIADMM.solve!(
+    prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
+    precondition=false, verbose=true, print_iter=100, agd_x_update=true,
     rho_update_iter=1000, multithreaded=true
 )
 
@@ -110,12 +118,37 @@ res_sketch = GeNIADMM.solve!(
 prob = GeNIADMM.LassoSolver(A, b, γ; ρ=1.0)
 res_sketch_no_correction = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
-    precondition=true, verbose=true, print_iter=1, sketch_solve_x_update=true,
+    precondition=true, verbose=true, print_iter=100, sketch_solve_x_update=true,
     sketch_rank=500, rho_update_iter=1000, multithreaded=true, add_Enorm=false
+)
+
+save(SAVEFILE, 
+    "res_gd", res_gd,
+    "res_agd", res_agd,
+    "res_dir", res_dir,
+    "res_nys", res_nys,
+    "res_sketch", res_sketch,
+    "res_sketch_no_correction", res_sketch_no_correction,
+    "res_opt", res_opt,
+    "pstar", pstar
+)
+
+## Load data
+res_gd, res_agd, res_dir, res_nys, res_sketch, res_sketch_no_correction, res_opt, pstar = load(
+    SAVEFILE, 
+    "res_gd",
+    "res_agd",
+    "res_dir",
+    "res_nys",
+    "res_sketch",
+    "res_sketch_no_correction",
+    "res_opt",
+    "pstar"
 )
 
 
 log_gd = res_gd.log
+log_agd = res_agd.log
 log_dir = res_dir.log
 log_nys = res_nys.log
 log_sketch = res_sketch.log
@@ -154,10 +187,11 @@ dual_gap_iter_plt = plot(;
     # ylims=(9e-5, 1e3)
 )
 add_to_plot!(dual_gap_iter_plt, 1:length(log_gd.iter_time), log_gd.dual_gap, "Gradient", :coral)
+add_to_plot!(dual_gap_iter_plt, 1:length(log_agd.iter_time), log_agd.dual_gap, "AGD", :firebrick)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_sketch.iter_time), log_sketch.dual_gap, "Sketch", :purple)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_dir.iter_time), log_dir.dual_gap, "ADMM (exact)", :red)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_nys.iter_time), log_nys.dual_gap, "NysADMM", :mediumblue, style=:dash)
-savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "lasso-dual-gap.pdf"))
+savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "lasso-dual-gap-aug24.pdf"))
 
 rp_iter_plt = plot(; 
     dpi=300,
@@ -169,10 +203,11 @@ rp_iter_plt = plot(;
     legend=:topright,
 )
 add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :coral)
+add_to_plot!(rp_iter_plt, 1:length(log_agd.iter_time), log_agd.rp, "AGD", :firebrick)
 add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple)
 add_to_plot!(rp_iter_plt, 1:length(log_dir.iter_time), log_dir.rp, "ADMM (exact)", :red)
 add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue, style=:dash)
-savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp.pdf"))
+savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp-aug24.pdf"))
 
 rd_iter_plt = plot(; 
     dpi=300,
@@ -184,10 +219,11 @@ rd_iter_plt = plot(;
     legend=:topright,
 )
 add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :coral)
+add_to_plot!(rd_iter_plt, 1:length(log_agd.iter_time), log_agd.rd, "AGD", :firebrick)
 add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple)
 add_to_plot!(rd_iter_plt, 1:length(log_dir.iter_time), log_dir.rd, "ADMM (exact)", :red)
 add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue, style=:dash)
-savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd.pdf"))
+savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd-aug24.pdf"))
 
 obj_val_iter_plt = plot(; 
     dpi=300,
@@ -200,10 +236,11 @@ obj_val_iter_plt = plot(;
     # ylims=(1e-8, 100)
 )
 add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), abs.(log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
+add_to_plot!(obj_val_iter_plt, 1:length(log_agd.iter_time), abs.(log_agd.obj_val .- pstar)./pstar, "AGD", :firebrick)
 add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), abs.(log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple)
 add_to_plot!(obj_val_iter_plt, 1:length(log_dir.iter_time), abs.(log_dir.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
 add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), abs.(log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue, style=:dash)
-savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val.pdf"))
+savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val-aug24.pdf"))
 
 lasso_plt = plot(; 
     dpi=300,
@@ -220,7 +257,7 @@ add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.rp, "Primal Residua
 add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.rd, "Dual Residual", :red)
 add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.dual_gap, "Duality Gap", :mediumblue)
 add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black; style=:dash, lw=1)
-savefig(lasso_plt, joinpath(FIGS_PATH, "lasso.pdf"))
+savefig(lasso_plt, joinpath(FIGS_PATH, "lasso-aug24.pdf"))
 
 ## Divergence plot
 end_ind = findfirst(x-> x > 1e20, log_sketch_no_correction.rd)
@@ -239,4 +276,5 @@ add_to_plot!(divergence_plt, 1:end_ind, log_sketch.dual_gap[1:end_ind], "Duality
 add_to_plot!(divergence_plt, 1:end_ind, log_sketch_no_correction.rp[1:end_ind], nothing, :indigo, lw=2, style=:dash)
 add_to_plot!(divergence_plt, 1:end_ind, log_sketch_no_correction.rd[1:end_ind], nothing, :red, lw=2, style=:dash)
 add_to_plot!(divergence_plt, 1:end_ind, log_sketch_no_correction.dual_gap[1:end_ind], nothing, :mediumblue, lw=2, style=:dash)
-savefig(divergence_plt, joinpath(FIGS_PATH, "lasso-divergence.pdf"))
+savefig(divergence_plt, joinpath(FIGS_PATH, "lasso-divergence-aug24.pdf"))
+
