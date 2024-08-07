@@ -17,7 +17,7 @@ const SAVEFILE_MOSEK = joinpath(DATAPATH, "logistic-mosek.jld2")
 const HAVE_DATA = true
 
 # Set this to false if you need to recompute the true optimal value
-const HAVE_OPT = false
+const HAVE_OPT = true
 
 if !HAVE_DATA
     real_sim = OpenML.load(1578)
@@ -152,7 +152,7 @@ save(SAVEFILE,
 )
 
 ## Load data
-res_gd, res_agd, res_exact, res_nys, res_sketch, res_sketch_no_correction, res_opt, pstar = load(
+res_gd, res_agd, res_exact, res_nys, res_sketch, res_sketch_no_correction, res_opt = load(
     SAVEFILE, 
     "res_gd",
     "res_agd",
@@ -341,7 +341,7 @@ dual_gap_iter_plt = plot(;
     labelfontsize=14,
     yaxis=:log,
     ylabel="Dual Gap",
-    xlabel="Iteration",
+    xlabel="Time (s)",
     legend=:topright,
     # xaxis=:log,
 )
