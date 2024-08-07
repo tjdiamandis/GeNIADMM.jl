@@ -13,5 +13,5 @@ Pkg.add(url="https://github.com/tjdiamandis/GeNIADMM.jl")
 ```
 
 All numerical experiments can be found in the `experiments` folder.
-The solver may be interesting beyond the theoretical results in the paper.
-More to come very soon...
+
+For a full solver that leverages the same ideas, check out [GeNIOS.jl](https://github.com/tjdiamandis/GeNIOS.jl).
