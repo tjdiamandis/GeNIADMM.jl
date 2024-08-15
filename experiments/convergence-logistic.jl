@@ -10,7 +10,7 @@ using GeNIADMM
 
 const DATAPATH = joinpath(@__DIR__, "data")
 const DATAFILE = joinpath(DATAPATH, "real-sim.jld2")
-const SAVEFILE = joinpath(DATAPATH, "logistic-aug24.jld2")
+const SAVEFILE = joinpath(DATAPATH, "logistic-updated.jld2")
 const SAVEFILE_MOSEK = joinpath(DATAPATH, "logistic-mosek.jld2")
 
 # Set this to false if you have not yet downloaded the real-sim dataset
@@ -90,45 +90,76 @@ pstar, xstar = load(SAVEFILE_MOSEK, "pstar", "xstar")
 
 ## Solve
 prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
+GC.gc()
+GeNIADMM.solve!(
+    prob; indirect=true, relax=false, max_iters=1, tol=1e-4, logging=true,
+    precondition=false, verbose=true, print_iter=100, gd_x_update=true,
+    rho_update_iter=10_000, multithreaded=true, xstar=xstar
+)
 res_gd = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=5_000, tol=1e-4, logging=true,
     precondition=false, verbose=true, print_iter=100, gd_x_update=true,
-    rho_update_iter=1000, multithreaded=true, xstar=xstar
+    rho_update_iter=10_000, multithreaded=true, xstar=xstar
 )
 
 prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
+GC.gc()
+GeNIADMM.solve!(
+    prob; indirect=true, relax=false, max_iters=1, tol=1e-4, logging=true,
+    precondition=false, verbose=true, print_iter=100, agd_x_update=true,
+    rho_update_iter=10_000, multithreaded=true, xstar=xstar
+)
 res_agd = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=5_000, tol=1e-4, logging=true,
     precondition=false, verbose=true, print_iter=100, agd_x_update=true,
-    rho_update_iter=1000, multithreaded=true, xstar=xstar
+    rho_update_iter=10_000, multithreaded=true, xstar=xstar
 )
 
 prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
+GC.gc()
+GeNIADMM.solve!(
+    prob; indirect=true, relax=false, max_iters=1, tol=1e-4, logging=true,
+    precondition=false, verbose=true, print_iter=1, rho_update_iter=10_000,
+    logistic_exact_solve=true, multithreaded=true
+)
 res_exact = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=5_000, tol=1e-4, logging=true,
-    precondition=false, verbose=true, print_iter=1, rho_update_iter=1000,
+    precondition=false, verbose=true, print_iter=1, rho_update_iter=10_000,
     logistic_exact_solve=true, multithreaded=true
 )
 
 prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0, α=1.0)
+GC.gc()
+GeNIADMM.solve!(
+    prob; indirect=true, relax=false, max_iters=1, tol=1e-4, logging=true,
+    precondition=true, verbose=true, print_iter=100, rho_update_iter=10_000,
+    multithreaded=true, summable_step_size=true, xstar=xstar
+)
 res_nys = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=5_000, tol=1e-4, logging=true,
-    precondition=true, verbose=true, print_iter=100, rho_update_iter=1000,
+    precondition=true, verbose=true, print_iter=100, rho_update_iter=10_000,
     multithreaded=true, summable_step_size=true, xstar=xstar
 )
 
 prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
+GC.gc()
+GeNIADMM.solve!(
+    prob; indirect=true, relax=false, max_iters=1, tol=1e-4, logging=true,
+    precondition=false, verbose=true, print_iter=100, sketch_solve_x_update=true,
+    sketch_rank=500, rho_update_iter=10_000,
+    multithreaded=true, xstar=xstar
+)
 res_sketch = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=5_000, tol=1e-4, logging=true,
     precondition=false, verbose=true, print_iter=100, sketch_solve_x_update=true,
-    sketch_rank=500, rho_update_iter=1000,
+    sketch_rank=500, rho_update_iter=10_000,
     multithreaded=true, xstar=xstar
 )
 
 prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
 res_opt = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=5_000, tol=1e-10, logging=true,
-    precondition=true, verbose=true, print_iter=100, rho_update_iter=1000,
+    precondition=true, verbose=true, print_iter=100, rho_update_iter=10_000,
     multithreaded=true, summable_step_size=true
 )
 pstar_nys = res_opt.obj_val
@@ -137,7 +168,7 @@ prob = GeNIADMM.LogisticSolver(A, b, γ; ρ=1.0)
 res_sketch_no_correction = GeNIADMM.solve!(
     prob; indirect=true, relax=false, max_iters=500, tol=1e-4, logging=true,
     precondition=false, verbose=true, print_iter=1, sketch_solve_x_update=true,
-    sketch_rank=500, rho_update_iter=1000,
+    sketch_rank=500, rho_update_iter=10_000,
     multithreaded=true, add_Enorm=false
 )
 
@@ -176,33 +207,39 @@ log_opt = res_opt.log
 @printf("\nADMM, Exact:")
 @printf("- setup:    %6.3f", log_exact.setup_time)
 @printf("- iter:    %6.3f", log_exact.solve_time / length(log_exact.dual_gap))
+@printf("- total:   %6.3f", log_exact.setup_time + log_exact.solve_time)
 
 @printf("\nNysADMM:")
 @printf("- setup:    %6.3f", log_nys.setup_time)
 @printf("- iter:    %6.3f", log_nys.solve_time / length(log_nys.dual_gap))
+@printf("- total:   %6.3f", log_nys.setup_time + log_nys.solve_time)
 
 @printf("\nGradient Descent:")
 @printf("- setup:    %6.3f", log_gd.setup_time)
 @printf("- iter:    %6.3f", log_gd.solve_time / length(log_gd.dual_gap))
+@printf("- total:   %6.3f", log_gd.setup_time + log_gd.solve_time)
 
 @printf("\nAGD ADMM:")
 @printf("- setup:    %6.3f", log_agd.setup_time)
 @printf("- iter:    %6.3f", log_agd.solve_time / length(log_agd.dual_gap))
+@printf("- total:   %6.3f", log_agd.setup_time + log_agd.solve_time)
 
 @printf("\nSketch & Solve:")
 @printf("- setup:    %6.3f", log_sketch.setup_time)
 @printf("- iter:    %6.3f", log_nys.solve_time / length(log_nys.dual_gap))
+@printf("- total:   %6.3f", log_sketch.setup_time + log_sketch.solve_time)
 
 
 
-function add_to_plot!(plt, x, y, label, color; style=:solid, lw=3)
+function add_to_plot!(plt, x, y, label, color; style=:solid, lw=3, marker=:none, max_len=typemax(Int))
     start = findfirst(y .> 0)
-    inds = start:length(x)
+    inds = start:(min(length(x), max_len))
     plot!(plt, x[inds], y[inds],
     label=label,
     lw=lw,
     linecolor=color,
-    linestyle=style
+    linestyle=style,
+    marker=marker
 )
 end
 
@@ -210,67 +247,67 @@ FIGS_PATH = joinpath(@__DIR__, "figs")
 
 dual_gap_iter_plt = plot(; 
     dpi=300,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     yaxis=:log,
     ylabel="Dual Gap",
     xlabel="Iteration",
     legend=:topright,
 )
-add_to_plot!(dual_gap_iter_plt, 1:length(log_gd.iter_time), log_gd.dual_gap, "Gradient", :coral)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_agd.iter_time), log_agd.dual_gap, "AGD ADMM", :firebrick)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_sketch.iter_time), log_sketch.dual_gap, "Sketch", :purple)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_exact.iter_time), log_exact.dual_gap, "ADMM (exact)", :red)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_nys.iter_time), log_nys.dual_gap, "NysADMM", :mediumblue; style=:dash)
-savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "logistic-dual-gap-aug24.pdf"))
+add_to_plot!(dual_gap_iter_plt, 1:length(log_gd.iter_time), log_gd.dual_gap, "Gradient", :coral, max_len=500)
+add_to_plot!(dual_gap_iter_plt, 1:length(log_agd.iter_time), log_agd.dual_gap, "AGD ADMM", :turquoise, max_len=500)
+add_to_plot!(dual_gap_iter_plt, 1:length(log_sketch.iter_time), log_sketch.dual_gap, "Sketch", :purple1, style=:dash, max_len=500)
+add_to_plot!(dual_gap_iter_plt, 1:length(log_exact.iter_time), log_exact.dual_gap, "ADMM (exact)", :red, max_len=500)
+add_to_plot!(dual_gap_iter_plt, 1:length(log_nys.iter_time), log_nys.dual_gap, "NysADMM", :mediumblue; style=:dash, max_len=500)
+savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "logistic-dual-gap-updated-500.pdf"))
 
 rp_iter_plt = plot(; 
     dpi=300,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     yaxis=:log,
     ylabel=L"Primal Residual $\ell_2$ Norm",
     xlabel="Iteration",
     legend=:topright,
 )
-add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :coral)
-add_to_plot!(rp_iter_plt, 1:length(log_agd.iter_time), log_agd.rp, "AGD ADMM", :firebrick)
-add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple)
-add_to_plot!(rp_iter_plt, 1:length(log_exact.iter_time), log_exact.rp, "ADMM (exact)", :red)
-add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue; style=:dash)
-savefig(rp_iter_plt, joinpath(FIGS_PATH, "logistic-rp-aug24.pdf"))
+add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :coral, max_len=500)
+add_to_plot!(rp_iter_plt, 1:length(log_agd.iter_time), log_agd.rp, "AGD ADMM", :turquoise, max_len=500)
+add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple1, style=:dash, max_len=500)
+add_to_plot!(rp_iter_plt, 1:length(log_exact.iter_time), log_exact.rp, "ADMM (exact)", :red, max_len=500)
+add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue; style=:dash, max_len=500)
+savefig(rp_iter_plt, joinpath(FIGS_PATH, "logistic-rp-updated-500.pdf"))
 
 rd_iter_plt = plot(; 
     dpi=300,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     yaxis=:log,
     ylabel=L"Dual Residual $\ell_2$ Norm",
     xlabel="Iteration",
     legend=:topright,
 )
-add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :coral)
-add_to_plot!(rd_iter_plt, 1:length(log_agd.iter_time), log_agd.rd, "AGD ADMM", :firebrick)
-add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple)
-add_to_plot!(rd_iter_plt, 1:length(log_exact.iter_time), log_exact.rd, "ADMM (exact)", :red)
-add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue; style=:dash)
-savefig(rd_iter_plt, joinpath(FIGS_PATH, "logistic-rd-aug24.pdf"))
+add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :coral, max_len=500)
+add_to_plot!(rd_iter_plt, 1:length(log_agd.iter_time), log_agd.rd, "AGD ADMM", :turquoise, max_len=500)
+add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple1, style=:dash, max_len=500)
+add_to_plot!(rd_iter_plt, 1:length(log_exact.iter_time), log_exact.rd, "ADMM (exact)", :red, max_len=500)
+add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue; style=:dash, max_len=500)
+savefig(rd_iter_plt, joinpath(FIGS_PATH, "logistic-rd-updated-500.pdf"))
 
 obj_val_iter_plt = plot(; 
     dpi=300,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     yaxis=:log,
     ylabel=L"$(p-p^\star)/p^\star$",
     xlabel="Iteration",
-    legend=:bottomright,
+    legend=:topright,
 )
-add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), (log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
-add_to_plot!(obj_val_iter_plt, 1:length(log_agd.iter_time), (log_agd.obj_val .- pstar)./pstar, "AGD ADMM", :firebrick)
-add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), (log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple)
-add_to_plot!(obj_val_iter_plt, 1:length(log_exact.iter_time), (log_exact.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
-add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), (log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue; style=:dash)
-savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "logistic-obj-val-aug24.pdf"))
+add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), (log_gd.obj_val .- pstar)./pstar, "Gradient", :coral, max_len=500)
+add_to_plot!(obj_val_iter_plt, 1:length(log_agd.iter_time), (log_agd.obj_val .- pstar)./pstar, "AGD ADMM", :turquoise, max_len=500)
+add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), (log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple1, style=:dash, max_len=500)
+add_to_plot!(obj_val_iter_plt, 1:length(log_exact.iter_time), (log_exact.obj_val .- pstar)./pstar, "ADMM (exact)", :red, max_len=500)
+add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), (log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue; style=:dash, max_len=500)
+savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "logistic-obj-val-updated-500.pdf"))
 
 logistic_plt = plot(; 
     dpi=300,
@@ -279,14 +316,14 @@ logistic_plt = plot(;
     xlabel="Iteration",
     legend=:topright,
     ylims=(1e-10, 1000),
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
 )
-add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), log_opt.rp, "Primal Residual", :indigo)
+add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), log_opt.rp, "Primal Residual", :turquoise)
 add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), log_opt.rd, "Dual Residual", :red)
 add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), log_opt.dual_gap, "Duality Gap", :mediumblue)
-add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black, lw=1)
-savefig(logistic_plt, joinpath(FIGS_PATH, "logistic-aug24.pdf"))
+add_to_plot!(logistic_plt, 1:length(log_opt.iter_time), sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black, lw=1, style=:dash)
+savefig(logistic_plt, joinpath(FIGS_PATH, "logistic-updated.pdf"))
 
 
 ## Divergence plot
@@ -299,13 +336,13 @@ divergence_plt = plot(;
     labelfontsize=14,
     ylims=(1e-2, 5e2)
 )
-add_to_plot!(divergence_plt, 1:length(log_sketch_no_correction.iter_time), log_sketch.rp[1:1000], "Primal Residual", :indigo, lw=2)
+add_to_plot!(divergence_plt, 1:length(log_sketch_no_correction.iter_time), log_sketch.rp[1:1000], "Primal Residual", :turquoise, lw=2)
 add_to_plot!(divergence_plt, 1:length(log_sketch_no_correction.iter_time), log_sketch.rd[1:1000], "Dual Residual", :red, lw=2)
 add_to_plot!(divergence_plt, 1:length(log_sketch_no_correction.iter_time), log_sketch.dual_gap[1:1000], "Duality Gap", :mediumblue, lw=2)
-add_to_plot!(divergence_plt, 1:length(log_sketch_no_correction.iter_time), log_sketch_no_correction.rp, nothing, :indigo, lw=2, style=:dash)
+add_to_plot!(divergence_plt, 1:length(log_sketch_no_correction.iter_time), log_sketch_no_correction.rp, nothing, :turquoise, lw=2, style=:dash)
 add_to_plot!(divergence_plt, 1:length(log_sketch_no_correction.iter_time), log_sketch_no_correction.rd, nothing, :red, lw=2, style=:dash)
 add_to_plot!(divergence_plt, 1:length(log_sketch_no_correction.iter_time), log_sketch_no_correction.dual_gap, nothing, :mediumblue, lw=2, style=:dash)
-savefig(divergence_plt, joinpath(FIGS_PATH, "logistic-divergence-aug24.pdf"))
+savefig(divergence_plt, joinpath(FIGS_PATH, "logistic-divergence-updated.pdf"))
 
 
 gd_time = log_gd.iter_time .+ log_gd.setup_time
@@ -316,9 +353,9 @@ exact_time = log_exact.iter_time .+ log_exact.setup_time
 nys_time = log_nys.iter_time .+ log_nys.setup_time
 
 ## Some time Plots (not in paper)
-obj_val_iter_plt = plot(; 
+obj_val_time_plt = plot(; 
     dpi=300,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     yaxis=:log,
     ylabel=L"$(p-p^\star)/p^\star$",
@@ -327,17 +364,17 @@ obj_val_iter_plt = plot(;
     legend=:topright,
     # xlims=(1, 1e3),
 )
-add_to_plot!(obj_val_iter_plt, gd_time, (log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
-add_to_plot!(obj_val_iter_plt, agd_time, (log_agd.obj_val .- pstar)./pstar, "AGD ADMM", :firebrick)
-add_to_plot!(obj_val_iter_plt, nys_time, (log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue)
-savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "logistic-obj-val-time-small.pdf"))
-add_to_plot!(obj_val_iter_plt, sketch_time, (log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple)
-add_to_plot!(obj_val_iter_plt, exact_time, (log_exact.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
-savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "logistic-obj-val-time.pdf"))
+add_to_plot!(obj_val_time_plt, gd_time, (log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
+add_to_plot!(obj_val_time_plt, agd_time, (log_agd.obj_val .- pstar)./pstar, "AGD ADMM", :turquoise)
+add_to_plot!(obj_val_time_plt, nys_time, (log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue)
+savefig(obj_val_time_plt, joinpath(FIGS_PATH, "logistic-obj-val-time-small.pdf"))
+add_to_plot!(obj_val_time_plt, sketch_time, (log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple1, style=:dash)
+add_to_plot!(obj_val_time_plt, exact_time, (log_exact.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
+savefig(obj_val_time_plt, joinpath(FIGS_PATH, "logistic-obj-val-time.pdf"))
 
-dual_gap_iter_plt = plot(; 
+dual_gap_time_plt = plot(; 
     dpi=300,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     yaxis=:log,
     ylabel="Dual Gap",
@@ -345,19 +382,19 @@ dual_gap_iter_plt = plot(;
     legend=:topright,
     # xaxis=:log,
 )
-add_to_plot!(dual_gap_iter_plt, gd_time, log_gd.dual_gap, "Gradient", :coral)
-add_to_plot!(dual_gap_iter_plt, agd_time, log_agd.dual_gap, "AGD ADMM", :firebrick)
-add_to_plot!(dual_gap_iter_plt, nys_time, log_nys.dual_gap, "NysADMM", :mediumblue)
-savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "logistic-dual-gap-time-small.pdf"))
-add_to_plot!(dual_gap_iter_plt, sketch_time, log_sketch.dual_gap, "Sketch", :purple)
-add_to_plot!(dual_gap_iter_plt, exact_time, log_exact.dual_gap, "ADMM (exact)", :red)
-savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "logistic-dual-gap-time.pdf"))
+add_to_plot!(dual_gap_time_plt, gd_time, log_gd.dual_gap, "Gradient", :coral)
+add_to_plot!(dual_gap_time_plt, agd_time, log_agd.dual_gap, "AGD ADMM", :turquoise)
+add_to_plot!(dual_gap_time_plt, nys_time, log_nys.dual_gap, "NysADMM", :mediumblue)
+savefig(dual_gap_time_plt, joinpath(FIGS_PATH, "logistic-dual-gap-time-small.pdf"))
+add_to_plot!(dual_gap_time_plt, sketch_time, log_sketch.dual_gap, "Sketch", :purple1, style=:dash)
+add_to_plot!(dual_gap_time_plt, exact_time, log_exact.dual_gap, "ADMM (exact)", :red)
+savefig(dual_gap_time_plt, joinpath(FIGS_PATH, "logistic-dual-gap-time.pdf"))
 
 time_exact = log_exact.iter_time .- log_exact.iter_time[1] .+ 1.0
 time_nys = log_nys.iter_time .- log_nys.iter_time[1] .+ 1.0
 timing_plt = plot(; 
     dpi=300,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     yaxis=:log,
     ylabel=L"$(p-p^\star)/p^\star$",
@@ -377,10 +414,10 @@ logistic_plt = plot(;
     xlabel="Time (s)",
     legend=:topright,
     ylims=(1e-10, 1000),
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
 )
-add_to_plot!(logistic_plt, log_opt.iter_time, log_opt.rp, "Primal Residual", :indigo)
+add_to_plot!(logistic_plt, log_opt.iter_time, log_opt.rp, "Primal Residual", :turquoise)
 add_to_plot!(logistic_plt, log_opt.iter_time, log_opt.rd, "Dual Residual", :red)
 add_to_plot!(logistic_plt, log_opt.iter_time, log_opt.dual_gap, "Duality Gap", :mediumblue)
 add_to_plot!(logistic_plt, log_opt.iter_time, sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black, lw=1)
@@ -397,7 +434,7 @@ assump_plt = plot(;
     legend=:topright,
 )
 add_to_plot!(assump_plt, 1:length(log_gd.iter_time), log_gd.assump, "Gradient", :coral)
-add_to_plot!(assump_plt, 1:length(log_sketch.iter_time), log_sketch.assump, "Sketch", :purple)
+add_to_plot!(assump_plt, 1:length(log_sketch.iter_time), log_sketch.assump, "Sketch", :purple1, style=:dash)
 # add_to_plot!(assump_plt, 1:length(log_exact.iter_time), log_exact.assump, "ADMM (exact)", :red)
 add_to_plot!(assump_plt, 1:length(log_nys.iter_time), log_nys.assump, "NysADMM", :mediumblue)
 savefig(assump_plt, joinpath(FIGS_PATH, "logistic-assump.pdf"))

@@ -176,7 +176,7 @@ function update_x̃_agd!(
     P=I,
     logging=false,
     tol=nothing,
-    max_iter = 5,
+    max_iter = 100,
 )
     compute_rhs!(solver)
 
@@ -190,7 +190,7 @@ function update_x̃_agd!(
 
     iter = 0
     @. solver.x̃k_old = solver.x̃k
-    while iter == 0 || (norm(solver.vgrad) > 2*solver.ρ*tol && iter < max_iter)
+    while iter == 0 || (norm(solver.vgrad)^2 > 2*solver.ρ*tol && iter < max_iter)
         # compute intermediate step
         if iter > 0
             @. solver.vn = solver.x̃k + (iter + 1) / (iter + 4) * (solver.x̃k - solver.x̃k_old)

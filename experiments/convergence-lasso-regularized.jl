@@ -163,11 +163,11 @@ rp_iter_plt = plot(;
     labelfontsize=14,
 )
 add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :coral)
-add_to_plot!(rp_iter_plt, 1:length(log_agd.iter_time), log_agd.rp, "AGD", :firebrick)
-add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple)
+add_to_plot!(rp_iter_plt, 1:length(log_agd.iter_time), log_agd.rp, "AGD", :turquoise)
+add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple1)
 add_to_plot!(rp_iter_plt, 1:length(log_dir.iter_time), log_dir.rp, "ADMM (exact)", :red)
 add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue; style=:dash)
-savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp-smooth-aug24.pdf"))
+savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp-smooth-updated.pdf"))
 
 rd_iter_plt = plot(; 
     dpi=300,
@@ -179,11 +179,11 @@ rd_iter_plt = plot(;
     labelfontsize=14,
 )
 add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :coral)
-add_to_plot!(rd_iter_plt, 1:length(log_agd.iter_time), log_agd.rd, "AGD", :firebrick)
-add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple)
+add_to_plot!(rd_iter_plt, 1:length(log_agd.iter_time), log_agd.rd, "AGD", :turquoise)
+add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple1)
 add_to_plot!(rd_iter_plt, 1:length(log_dir.iter_time), log_dir.rd, "ADMM (exact)", :red)
 add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue; style=:dash)
-savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd-smooth-aug24.pdf"))
+savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd-smooth-updated.pdf"))
 
 obj_val_iter_plt = plot(; 
     dpi=300,
@@ -196,9 +196,9 @@ obj_val_iter_plt = plot(;
     # ylims=(1e-8, 100)
 )
 add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), abs.(log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
-add_to_plot!(obj_val_iter_plt, 1:length(log_agd.iter_time), abs.(log_agd.obj_val .- pstar)./pstar, "AGD", :firebrick)
-add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), abs.(log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple)
+add_to_plot!(obj_val_iter_plt, 1:length(log_agd.iter_time), abs.(log_agd.obj_val .- pstar)./pstar, "AGD", :turquoise)
+add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), abs.(log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple1)
 add_to_plot!(obj_val_iter_plt, 1:length(log_dir.iter_time), abs.(log_dir.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
 add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), abs.(log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue; style=:dash)
 # add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), (log_nys.obj_val .- pstar_nys)./pstar_nys, "ADMM, Nystrom (pstar Nys)", :mediumblue)
-savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val-smooth-aug24.pdf"))
+savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val-smooth-updated.pdf"))

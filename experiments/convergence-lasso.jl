@@ -187,11 +187,11 @@ dual_gap_iter_plt = plot(;
     # ylims=(9e-5, 1e3)
 )
 add_to_plot!(dual_gap_iter_plt, 1:length(log_gd.iter_time), log_gd.dual_gap, "Gradient", :coral)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_agd.iter_time), log_agd.dual_gap, "AGD", :firebrick)
-add_to_plot!(dual_gap_iter_plt, 1:length(log_sketch.iter_time), log_sketch.dual_gap, "Sketch", :purple)
+add_to_plot!(dual_gap_iter_plt, 1:length(log_agd.iter_time), log_agd.dual_gap, "AGD", :turquoise)
+add_to_plot!(dual_gap_iter_plt, 1:length(log_sketch.iter_time), log_sketch.dual_gap, "Sketch", :purple1)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_dir.iter_time), log_dir.dual_gap, "ADMM (exact)", :red)
 add_to_plot!(dual_gap_iter_plt, 1:length(log_nys.iter_time), log_nys.dual_gap, "NysADMM", :mediumblue, style=:dash)
-savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "lasso-dual-gap-aug24.pdf"))
+savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "lasso-dual-gap-updated.pdf"))
 
 rp_iter_plt = plot(; 
     dpi=300,
@@ -203,11 +203,11 @@ rp_iter_plt = plot(;
     legend=:topright,
 )
 add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :coral)
-add_to_plot!(rp_iter_plt, 1:length(log_agd.iter_time), log_agd.rp, "AGD", :firebrick)
-add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple)
+add_to_plot!(rp_iter_plt, 1:length(log_agd.iter_time), log_agd.rp, "AGD", :turquoise)
+add_to_plot!(rp_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rp, "Sketch", :purple1)
 add_to_plot!(rp_iter_plt, 1:length(log_dir.iter_time), log_dir.rp, "ADMM (exact)", :red)
 add_to_plot!(rp_iter_plt, 1:length(log_nys.iter_time), log_nys.rp, "NysADMM", :mediumblue, style=:dash)
-savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp-aug24.pdf"))
+savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp-updated.pdf"))
 
 rd_iter_plt = plot(; 
     dpi=300,
@@ -219,11 +219,11 @@ rd_iter_plt = plot(;
     legend=:topright,
 )
 add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :coral)
-add_to_plot!(rd_iter_plt, 1:length(log_agd.iter_time), log_agd.rd, "AGD", :firebrick)
-add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple)
+add_to_plot!(rd_iter_plt, 1:length(log_agd.iter_time), log_agd.rd, "AGD", :turquoise)
+add_to_plot!(rd_iter_plt, 1:length(log_sketch.iter_time), log_sketch.rd, "Sketch", :purple1)
 add_to_plot!(rd_iter_plt, 1:length(log_dir.iter_time), log_dir.rd, "ADMM (exact)", :red)
 add_to_plot!(rd_iter_plt, 1:length(log_nys.iter_time), log_nys.rd, "NysADMM", :mediumblue, style=:dash)
-savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd-aug24.pdf"))
+savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd-updated.pdf"))
 
 obj_val_iter_plt = plot(; 
     dpi=300,
@@ -236,11 +236,11 @@ obj_val_iter_plt = plot(;
     # ylims=(1e-8, 100)
 )
 add_to_plot!(obj_val_iter_plt, 1:length(log_gd.iter_time), abs.(log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
-add_to_plot!(obj_val_iter_plt, 1:length(log_agd.iter_time), abs.(log_agd.obj_val .- pstar)./pstar, "AGD", :firebrick)
-add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), abs.(log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple)
+add_to_plot!(obj_val_iter_plt, 1:length(log_agd.iter_time), abs.(log_agd.obj_val .- pstar)./pstar, "AGD", :turquoise)
+add_to_plot!(obj_val_iter_plt, 1:length(log_sketch.iter_time), abs.(log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple1)
 add_to_plot!(obj_val_iter_plt, 1:length(log_dir.iter_time), abs.(log_dir.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
 add_to_plot!(obj_val_iter_plt, 1:length(log_nys.iter_time), abs.(log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue, style=:dash)
-savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val-aug24.pdf"))
+savefig(obj_val_iter_plt, joinpath(FIGS_PATH, "lasso-obj-val-updated.pdf"))
 
 lasso_plt = plot(; 
     dpi=300,
@@ -253,11 +253,11 @@ lasso_plt = plot(;
     labelfontsize=14,
     titlefontsize=14
 )
-add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.rp, "Primal Residual", :indigo)
+add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.rp, "Primal Residual", :turquoise)
 add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.rd, "Dual Residual", :red)
 add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), log_opt.dual_gap, "Duality Gap", :mediumblue)
 add_to_plot!(lasso_plt, 1:length(log_opt.iter_time), sqrt(eps())*ones(length(log_opt.iter_time)), L"\sqrt{\texttt{eps}}", :black; style=:dash, lw=1)
-savefig(lasso_plt, joinpath(FIGS_PATH, "lasso-aug24.pdf"))
+savefig(lasso_plt, joinpath(FIGS_PATH, "lasso-updated.pdf"))
 
 ## Divergence plot
 end_ind = findfirst(x-> x > 1e20, log_sketch_no_correction.rd)
@@ -270,11 +270,11 @@ divergence_plt = plot(;
     labelfontsize=14,
     # ylims=(1e-2, 5e2)
 )
-add_to_plot!(divergence_plt, 1:end_ind, log_sketch.rp[1:end_ind], "Primal Residual", :indigo, lw=2)
+add_to_plot!(divergence_plt, 1:end_ind, log_sketch.rp[1:end_ind], "Primal Residual", :turquoise, lw=2)
 add_to_plot!(divergence_plt, 1:end_ind, log_sketch.rd[1:end_ind], "Dual Residual", :red, lw=2)
 add_to_plot!(divergence_plt, 1:end_ind, log_sketch.dual_gap[1:end_ind], "Duality Gap", :mediumblue, lw=2)
-add_to_plot!(divergence_plt, 1:end_ind, log_sketch_no_correction.rp[1:end_ind], nothing, :indigo, lw=2, style=:dash)
+add_to_plot!(divergence_plt, 1:end_ind, log_sketch_no_correction.rp[1:end_ind], nothing, :turquoise, lw=2, style=:dash)
 add_to_plot!(divergence_plt, 1:end_ind, log_sketch_no_correction.rd[1:end_ind], nothing, :red, lw=2, style=:dash)
 add_to_plot!(divergence_plt, 1:end_ind, log_sketch_no_correction.dual_gap[1:end_ind], nothing, :mediumblue, lw=2, style=:dash)
-savefig(divergence_plt, joinpath(FIGS_PATH, "lasso-divergence-aug24.pdf"))
+savefig(divergence_plt, joinpath(FIGS_PATH, "lasso-divergence-updated.pdf"))
 
