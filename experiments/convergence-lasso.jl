@@ -178,7 +178,7 @@ FIGS_PATH = joinpath(@__DIR__, "figs")
 
 dual_gap_iter_plt = plot(; 
     dpi=300,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     yaxis=:log,
     ylabel="Dual Gap",
@@ -195,7 +195,7 @@ savefig(dual_gap_iter_plt, joinpath(FIGS_PATH, "lasso-dual-gap-updated.pdf"))
 
 rp_iter_plt = plot(; 
     dpi=300,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     yaxis=:log,
     ylabel=L"Primal Residual $\ell_2$ Norm",
@@ -211,7 +211,7 @@ savefig(rp_iter_plt, joinpath(FIGS_PATH, "lasso-rp-updated.pdf"))
 
 rd_iter_plt = plot(; 
     dpi=300,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     yaxis=:log,
     ylabel=L"Dual Residual $\ell_2$ Norm",
@@ -227,7 +227,7 @@ savefig(rd_iter_plt, joinpath(FIGS_PATH, "lasso-rd-updated.pdf"))
 
 obj_val_iter_plt = plot(; 
     dpi=300,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     yaxis=:log,
     ylabel=L"$\left| p - p^\star\right|/p^\star$",
@@ -249,7 +249,7 @@ lasso_plt = plot(;
     xlabel="Iteration",
     legend=:topright,
     ylims=(1e-10, 1000),
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     titlefontsize=14
 )

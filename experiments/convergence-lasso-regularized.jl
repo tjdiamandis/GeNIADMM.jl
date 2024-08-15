@@ -159,7 +159,7 @@ rp_iter_plt = plot(;
     ylabel=L"Primal Residual $\ell_2$ Norm",
     xlabel="Iteration",
     legend=:topright,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
 )
 add_to_plot!(rp_iter_plt, 1:length(log_gd.iter_time), log_gd.rp, "Gradient", :coral)
@@ -175,7 +175,7 @@ rd_iter_plt = plot(;
     ylabel=L"Dual Residual $\ell_2$ Norm",
     xlabel="Iteration",
     legend=:topright,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
 )
 add_to_plot!(rd_iter_plt, 1:length(log_gd.iter_time), log_gd.rd, "Gradient", :coral)
@@ -191,7 +191,7 @@ obj_val_iter_plt = plot(;
     ylabel=L"$\left| p - p^\star\right|/p^\star$",
     xlabel="Iteration",
     legend=:topright,
-    legendfontsize=14,
+    legendfontsize=12,
     labelfontsize=14,
     # ylims=(1e-8, 100)
 )
