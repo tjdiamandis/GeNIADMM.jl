@@ -1,7 +1,7 @@
 name = "GeNIADMM"
 uuid = "0d1f9d2f-3ce1-407c-be80-0fbb5dc675f5"
 authors = ["Theo Diamandis"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 Krylov = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
