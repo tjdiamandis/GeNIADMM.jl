@@ -17,13 +17,13 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 SuiteSparse = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 
 [compat]
-Krylov = "0.7, 0.8, 0.9"
+Krylov = "0.9"
 LineSearches = "7"
 LogExpFunctions = "0.3"
 Optim = "1"
-RandomizedPreconditioners = "0.1.5"
+RandomizedPreconditioners = "0.1.8"
 StaticArrays = "1"
-julia = "1.8"
+julia = "1.10.9"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
