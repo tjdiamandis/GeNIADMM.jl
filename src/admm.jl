@@ -41,13 +41,13 @@ end
 
 
 function build_preconditioner(solver::LassoSolver, r0; μ)
-    ATA_nys = RP.NystromSketch_ATA(solver.lhs_op.A, r0, r0)
+    ATA_nys = RP.NystromSketch(solver.lhs_op, r0)
     return RP.NystromPreconditionerInverse(ATA_nys, solver.ρ + solver.μ)
 end
 
 
 function build_preconditioner(solver::LogisticSolver, r0; μ)
-    ATA_nys = NystromSketch_ATA_logistic(solver.lhs_op.A, r0, solver)
+    ATA_nys = RP.NystromSketch(solver.lhs_op, r0)
     return RP.NystromPreconditionerInverse(ATA_nys, solver.ρ)
 end
 

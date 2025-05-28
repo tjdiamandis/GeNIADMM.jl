@@ -15,6 +15,37 @@ struct LassoLinearOperator{T} <: LinearOperator
     end
 end
 
+# Quick fix: should not sketch the + μI part of HessianOperator
+# TODO: find a better work around
+function RandomizedPreconditioners.NystromSketch(H::LinearOperator, r::Int; n=nothing, S=Matrix{Float64})
+    n = isnothing(n) ? size(H.A, 2) : n
+    Y = S(undef, n, r)
+    fill!(Y, 0.0)
+
+    Ω = 1/sqrt(n) * randn(n, r)
+    # TODO: maybe add a powering option here?
+    for i in 1:r
+        @views mul!(H.cache, H.A, Ω[:, i])
+        if hasfield(typeof(H), :wk)
+            @. H.cache *= H.wk
+        end
+        @views mul!(Y[:, i], H.A', H.cache)
+    end
+    
+    ν = sqrt(n)*eps(norm(Y))
+    @. Y = Y + ν*Ω
+
+    Z = zeros(r, r)
+    mul!(Z, Ω', Y)
+    # Z[diagind(Z)] .+= ν                 # for numerical stability
+    
+    B = Y / cholesky(Symmetric(Z)).U
+    U, Σ, _ = svd(B)
+    Λ = Diagonal(max.(0, Σ.^2 .- ν))
+
+    return NystromSketch(U, Λ)
+end
+
 # y = (AᵀA + ρI)x
 function LinearAlgebra.mul!(y::AbstractVector{T}, M::LassoLinearOperator{T}, x::AbstractVector{T}) where {T}
     mul!(M.cache, M.A, x)
