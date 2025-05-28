@@ -10,7 +10,7 @@ using GeNIADMM
 
 const DATAPATH = joinpath(@__DIR__, "data")
 const DATAFILE = joinpath(DATAPATH, "real-sim.jld2")
-const SAVEFILE = joinpath(DATAPATH, "logistic-updated.jld2")
+# const SAVEFILE = joinpath(DATAPATH, "logistic-updated.jld2")
 const SAVEFILE_MOSEK = joinpath(DATAPATH, "logistic-mosek.jld2")
 
 # Set this to false if you have not yet downloaded the real-sim dataset
@@ -365,9 +365,9 @@ obj_val_time_plt = plot(;
     # xlims=(1, 1e3),
 )
 add_to_plot!(obj_val_time_plt, gd_time, (log_gd.obj_val .- pstar)./pstar, "Gradient", :coral)
-add_to_plot!(obj_val_time_plt, agd_time, (log_agd.obj_val .- pstar)./pstar, "AGD ADMM", :turquoise)
+add_to_plot!(obj_val_time_plt, agd_time, (log_agd.obj_val .- pstar)./pstar, "FISTA", :turquoise)
 add_to_plot!(obj_val_time_plt, nys_time, (log_nys.obj_val .- pstar)./pstar, "NysADMM", :mediumblue)
-savefig(obj_val_time_plt, joinpath(FIGS_PATH, "logistic-obj-val-time-small.pdf"))
+savefig(obj_val_time_plt, joinpath(FIGS_PATH, "logistic-obj-val-time-fista.pdf"))
 add_to_plot!(obj_val_time_plt, sketch_time, (log_sketch.obj_val .- pstar)./pstar, "Sketch", :purple1)
 add_to_plot!(obj_val_time_plt, exact_time, (log_exact.obj_val .- pstar)./pstar, "ADMM (exact)", :red)
 savefig(obj_val_time_plt, joinpath(FIGS_PATH, "logistic-obj-val-time.pdf"))
@@ -383,9 +383,9 @@ dual_gap_time_plt = plot(;
     # xaxis=:log,
 )
 add_to_plot!(dual_gap_time_plt, gd_time, log_gd.dual_gap, "Gradient", :coral)
-add_to_plot!(dual_gap_time_plt, agd_time, log_agd.dual_gap, "AGD ADMM", :turquoise)
+add_to_plot!(dual_gap_time_plt, agd_time, log_agd.dual_gap, "FISTA", :turquoise)
 add_to_plot!(dual_gap_time_plt, nys_time, log_nys.dual_gap, "NysADMM", :mediumblue)
-savefig(dual_gap_time_plt, joinpath(FIGS_PATH, "logistic-dual-gap-time-small.pdf"))
+savefig(dual_gap_time_plt, joinpath(FIGS_PATH, "logistic-dual-gap-time-fista.pdf"))
 add_to_plot!(dual_gap_time_plt, sketch_time, log_sketch.dual_gap, "Sketch", :purple1)
 add_to_plot!(dual_gap_time_plt, exact_time, log_exact.dual_gap, "ADMM (exact)", :red)
 savefig(dual_gap_time_plt, joinpath(FIGS_PATH, "logistic-dual-gap-time.pdf"))

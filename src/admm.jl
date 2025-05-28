@@ -176,7 +176,7 @@ function update_x̃_agd!(
     P=I,
     logging=false,
     tol=nothing,
-    max_iter = 100,
+    max_iter = 1,
 )
     compute_rhs!(solver)
 
@@ -189,7 +189,7 @@ function update_x̃_agd!(
     tol = min(sqrt(solver.rp_norm * solver.rd_norm), 1.0) * tol
 
     iter = 0
-    @. solver.x̃k_old = solver.x̃k
+    # @. solver.x̃k_old = solver.x̃k
     while iter == 0 || (norm(solver.vgrad)^2 > 2*solver.ρ*tol && iter < max_iter)
         # compute intermediate step
         if iter > 0
@@ -647,6 +647,7 @@ function solve!(
     summable_step_size::Bool=false,
     add_Enorm::Bool=true,
     xstar::Union{Vector{Float64},Nothing}=nothing,
+    agd_iters::Int=10,
 )
     !indirect && precondition && ArgumentError("Cannot precondition direct solve")
 
@@ -759,7 +760,7 @@ function solve!(
         if gd_x_update
             time_linsys = update_x̃_gd!(solver; P=P, logging=logging)
         elseif agd_x_update
-            time_linsys = update_x̃_agd!(solver; P=P, logging=logging, tol=linsys_tol)
+            time_linsys = update_x̃_agd!(solver; P=P, logging=logging, tol=linsys_tol, max_iter=agd_iters)
         elseif sketch_solve_x_update
             if typeof(solver) <: LogisticSolver && (t == 1 || t % sketch_solve_update_iter == 0)
                 #  -- Update wk --
